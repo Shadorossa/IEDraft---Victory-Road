@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Inazuma Draft - Speed Loader</title>
+    <title>Inazuma Draft - Instant Load</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="data.js" onerror="console.log('Modo manual activo')"></script>
 
@@ -30,7 +30,6 @@
             --c-silver-s-bg: linear-gradient(135deg, #555, #888);
             --c-silver-border: #444;
             --c-silver-bg: #1c1c1c;
-
             --stat-low: #e74c3c;
             --stat-mid: #f39c12;
             --stat-high: #2ecc71;
@@ -55,7 +54,7 @@
             padding-bottom: 120px;
         }
 
-        /* CONFIG UI */
+        /* UI CONFIG */
         #config-overlay {
             position: fixed;
             top: 0;
@@ -478,7 +477,6 @@
             overflow: hidden;
         }
 
-        /* ZOOM ANIMATION */
         .mini-img {
             width: 120%;
             height: 90%;
@@ -739,6 +737,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            position: relative;
         }
 
         .modal-content.god-pack {
@@ -771,6 +770,49 @@
             overflow-x: auto;
             align-items: center;
             background: radial-gradient(circle, #252525 0%, #1a1a1a 100%);
+            min-height: 400px;
+        }
+
+        /* LOADER OVERLAY */
+        #pack-loader {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #111;
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            transition: opacity 0.3s;
+        }
+
+        .loader-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #333;
+            border-top: 5px solid var(--accent-gold-bright);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loader-text {
+            font-family: 'Orbitron';
+            color: #fff;
+            letter-spacing: 2px;
         }
 
         .choice-card {
@@ -786,25 +828,11 @@
             width: 230px;
             height: 340px;
             flex-shrink: 0;
-            opacity: 0;
-            animation: revealCard 0.4s forwards;
+            /* opacity: 0;  REMOVED FOR PRELOADER LOGIC */
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
             transform: skewX(-2deg);
         }
 
-        @keyframes revealCard {
-            to {
-                opacity: 1;
-                transform: skewX(-2deg) translateY(0);
-            }
-
-            from {
-                opacity: 0;
-                transform: skewX(-2deg) translateY(40px);
-            }
-        }
-
-        /* ZOOM AL CONTENEDOR */
         .choice-card:hover {
             transform: scale(1.1) skewX(-2deg);
             z-index: 100;
@@ -851,7 +879,6 @@
             height: 95%;
             filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.8));
             z-index: 2;
-            transition: 0.3s;
         }
 
         .choice-info {
@@ -1029,6 +1056,10 @@
 
     <div class="modal-overlay" id="draftModal">
         <div class="modal-content" id="modalBox">
+            <div id="pack-loader">
+                <div class="loader-spinner"></div>
+                <div class="loader-text">ABRIENDO SOBRE...</div>
+            </div>
             <div class="modal-header">
                 <h2 id="modalTitle"></h2>
             </div>
@@ -1051,7 +1082,7 @@
         let specialSlotIndices = new Set();
         let currentSlotIndex = 0;
 
-        // Cache para las rutas encontradas
+        // CACHE DE RUTAS PARA VELOCIDAD EXTREMA
         const pathCache = new Map();
 
         const translations = {
@@ -1068,55 +1099,62 @@
             "5-4-1": [["FW"], ["MF", "MF", "MF", "MF"], ["DF", "DF", "DF", "DF", "DF"], ["GK"]]
         };
 
-        // --- MOTOR DE BUSQUEDA AUTOMÁTICO (PARALELO) ---
-        const seasons = ['IE1', 'IE2', 'IE3', 'IEGO', 'GOCS', 'GOGX', 'ARES', 'ORION', 'VICTORY ROAD'];
+        const baseSeasons = ['IE1', 'IE2', 'IE3', 'IEGO', 'GOCS', 'GOGX', 'ARES', 'ORION', 'VICTORY ROAD'];
 
-        function generateCandidatePaths(id, name) {
-            // Nombre Limpio: "Anne Somnia" -> "AnneSomnia"
-            const nameClean = name.split('(')[0].trim().replace(/[^a-zA-Z0-9]/g, '');
+        // --- SISTEMA PRE-LOADER INTELIGENTE ---
+        // Encuentra la ruta valida ANTES de mostrar la carta
+        function findValidPath(id, name) {
+            return new Promise((resolve) => {
+                if (pathCache.has(id)) {
+                    resolve(pathCache.get(id));
+                    return;
+                }
 
-            // Variantes de ID (Tu repo usa 0001)
-            const id4 = String(id).padStart(4, '0');
-            const fileName = `${id4}_${nameClean}.png`;
+                const nameClean = name.split('(')[0].trim().replace(/[^a-zA-Z0-9]/g, '');
+                const id4 = String(id).padStart(4, '0');
+                const fileName = `${id4}_${nameClean}.png`;
 
-            let paths = [];
+                let candidates = [];
+                baseSeasons.forEach(season => {
+                    candidates.push(`img/${season}/Scouts/${fileName}`);
+                    candidates.push(`img/${season}/${fileName}`);
+                });
 
-            seasons.forEach(season => {
-                // 1. CARPETA SCOUTS (Mayúscula) -> Lo más probable
-                paths.push(`img/${season}/Scouts/${fileName}`);
-                // 2. CARPETA RAIZ
-                paths.push(`img/${season}/${fileName}`);
-            });
-            return paths;
-        }
+                let solved = false;
+                let pending = candidates.length;
 
-        // CARGA INSTANTANEA
-        function findAndLoadImage(imgElement, id, name) {
-            // 1. Check Cache
-            if (pathCache.has(id)) {
-                imgElement.src = pathCache.get(id);
-                return;
-            }
-
-            const candidates = generateCandidatePaths(id, name);
-            let found = false;
-
-            // 2. Lanzar todas las peticiones a la vez
-            candidates.forEach(src => {
-                const img = new Image();
-                img.onload = () => {
-                    if (!found) {
-                        found = true;
-                        pathCache.set(id, src); // Guardar ganador
-                        imgElement.src = src;
-                    }
-                };
-                img.src = src;
+                candidates.forEach(src => {
+                    const img = new Image();
+                    img.onload = () => {
+                        if (!solved) {
+                            solved = true;
+                            pathCache.set(id, src);
+                            resolve(src);
+                        }
+                    };
+                    img.onerror = () => {
+                        pending--;
+                        if (pending === 0 && !solved) resolve(null); // No encontrada
+                    };
+                    img.src = src;
+                });
             });
         }
+
+        // --- SOLO PARA EL CAMPO (Carga normal) ---
+        window.loadKnownImage = function (img, id, name) {
+            findValidPath(id, name).then(src => {
+                if (src) img.src = src;
+                else img.style.opacity = '0.3';
+            });
+        };
 
         function getSafeName(name) {
-            return name; // Dejamos el nombre sucio, generate lo limpia
+            let str = name.toLowerCase();
+            const map = { 'ă': 'a', 'â': 'a', 'î': 'i', 'ș': 's', 'ț': 't', 'ñ': 'n', 'ß': 's', 'ö': 'o', 'ä': 'a', 'ü': 'u' };
+            for (let char in map) str = str.replace(new RegExp(char, 'g'), map[char]);
+            str = str.replace(/[áéíóú]/g, '');
+            return str.replace(/[^a-z0-9]/g, '');
         }
 
         function getBaseName(name) {
@@ -1279,15 +1317,20 @@
         }
 
         let activeSlot = null;
-        function openModal(slot, posCode, role, strict, isSpecial) {
+        async function openModal(slot, posCode, role, strict, isSpecial) {
             activeSlot = slot;
             const modal = document.getElementById('draftModal');
             const modalBox = document.getElementById('modalBox');
             const container = document.getElementById('modalOptions');
             const title = document.getElementById('modalTitle');
+            const loader = document.getElementById('pack-loader');
 
             modal.style.display = 'flex';
             container.innerHTML = '';
+
+            // SHOW LOADER
+            loader.style.display = 'flex';
+            loader.style.opacity = '1';
 
             title.innerText = (translations.pos[posCode] || posCode);
 
@@ -1350,7 +1393,7 @@
                 }
 
             } else {
-                // NORMAL RATES: 0.5% IF, 5% GoldS
+                // NORMAL RATES
                 const t1 = pool.filter(p => calcTotal(p) >= limitIF);
                 const t2 = pool.filter(p => calcTotal(p) < limitIF && calcTotal(p) >= limitGoldShiny);
                 const t3 = pool.filter(p => calcTotal(p) < limitGoldShiny && calcTotal(p) >= limitGold);
@@ -1381,7 +1424,17 @@
                 }
             }
 
-            renderPicks(picks, container);
+            // --- PRE-LOADER MAGIC ---
+            // 1. Resolvemos todas las rutas ANTES de pintar
+            const promises = picks.map(p => findValidPath(p.id, p.nombre).then(src => ({ ...p, imgSrc: src })));
+            const readyPlayers = await Promise.all(promises);
+
+            // 2. Pintamos
+            renderPicks(readyPlayers, container);
+
+            // 3. Ocultamos Loader
+            loader.style.opacity = '0';
+            setTimeout(() => { loader.style.display = 'none'; }, 300);
         }
 
         function renderPicks(players, container) {
@@ -1419,7 +1472,7 @@
                 card.innerHTML = `
                     <div class="choice-score ${rareClass}">${total}</div>
                     <div class="choice-img-box">
-                        <img src="" class="choice-img" onerror="findAndLoadImage(this, '${p.id}', '${p.nombre}')">
+                        <img src="${p.imgSrc || ''}" class="choice-img">
                     </div>
                     <div class="choice-info">
                         <div class="choice-name">${p.nombre}</div>
@@ -1428,16 +1481,12 @@
                     </div>
                 `;
 
-                // Disparar carga
-                const img = card.querySelector('img');
-                findAndLoadImage(img, p.id, p.nombre);
-
-                card.onclick = () => fillSlot(p, total, p.nombre, elemEs, rareClass);
+                card.onclick = () => fillSlot(p, total, elemEs, rareClass, p.imgSrc);
                 container.appendChild(card);
             });
         }
 
-        function fillSlot(p, total, pName, elemEs, rareClass) {
+        function fillSlot(p, total, elemEs, rareClass, imgSrc) {
             pickedIDs.add(p.id);
             pickedBaseNames.add(getBaseName(p.nombre));
 
@@ -1450,16 +1499,13 @@
             slot.innerHTML = `
                 <div class="mini-player">
                     <div class="mini-badge el-${elemEs}">${pos}</div>
-                    <img src="" class="mini-img">
+                    <img src="${imgSrc || ''}" class="mini-img">
                     <div class="mini-info">
                         <div class="mini-name">${p.nombre}</div>
                         <div class="mini-total">TOT: ${total}</div>
                     </div>
                 </div>
             `;
-
-            const img = slot.querySelector('img');
-            findAndLoadImage(img, p.id, pName);
 
             teamTotal += total; updateStats(); closeModal();
 
@@ -1503,7 +1549,7 @@
                     `;
 
                     const img = div.querySelector('img');
-                    findAndLoadImage(img, pick.id, pick.nombre);
+                    loadKnownImage(img, pick.id, pick.nombre);
 
                     container.appendChild(div);
                 }
