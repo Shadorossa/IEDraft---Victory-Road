@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Inazuma Draft - Smooth Opening</title>
+    <title>Inazuma Draft - Ultimate Pack Opening</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="data.js" onerror="console.log('Modo manual activo')"></script>
 
@@ -976,6 +976,7 @@
             background: var(--c-silver-bg);
         }
 
+        /* IMPORTANT: Opacidad inicial a 0 y transicion */
         .choice-img-box {
             height: 190px;
             width: 100%;
@@ -1527,10 +1528,14 @@
             if (isSpecial) {
                 packTierClass = 'p-god';
             } else {
+                // Calcular media de los 5 jugadores
                 const avgTotal = picks.reduce((sum, p) => sum + calcTotal(p), 0) / (picks.length || 1);
+
                 if (avgTotal >= limitGold) packTierClass = 'p-gold';
                 else if (avgTotal >= limitSilverShiny) packTierClass = 'p-silver';
+                // si es menor, se queda en p-bronze
             }
+            // Aplicar clase de color al sobre
             packVisual.classList.add(packTierClass);
 
             // --- SECUENCIA DE ANIMACIÓN (FLASH SPEED) ---
@@ -1608,8 +1613,7 @@
             slot.innerHTML = `
                 <div class="mini-player">
                     <div class="mini-badge el-${elemEs}">${pos}</div>
-                    <img src="${imgSrc || ''}" class="mini-img">
-                    <div class="mini-info">
+                    <img src="${imgSrc || ''}" class="mini-img loaded"> <div class="mini-info">
                         <div class="mini-name">${p.nombre}</div>
                         <div class="mini-total">TOT: ${total}</div>
                     </div>
