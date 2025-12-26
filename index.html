@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Inazuma Draft - Instant Preload</title>
+    <title>Inazuma Draft - Optimized</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="data.js" onerror="console.log('Modo manual activo')"></script>
 
@@ -51,7 +51,7 @@
             padding-bottom: 120px;
         }
 
-        /* UI CONFIG */
+        /* CONFIG UI */
         #config-overlay {
             position: fixed;
             top: 0;
@@ -484,6 +484,12 @@
             left: -10%;
             filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.6));
             transition: transform 0.3s ease;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        .mini-img.loaded {
+            opacity: 1;
         }
 
         .slot.filled:hover .mini-img {
@@ -683,6 +689,12 @@
             position: absolute;
             bottom: 20%;
             filter: grayscale(0.5);
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        .reserve-img.loaded {
+            opacity: 1;
         }
 
         .reserve-slot:hover .reserve-img {
@@ -847,6 +859,12 @@
             height: 95%;
             filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.8));
             z-index: 2;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        .choice-img.loaded {
+            opacity: 1;
         }
 
         .choice-info {
@@ -942,6 +960,31 @@
 
         .el-Neutro {
             color: #e040fb;
+        }
+
+        /* LOADING SPINNER SMALL */
+        .img-loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 30px;
+            height: 30px;
+            border: 3px solid #333;
+            border-top: 3px solid #fff;
+            border-radius: 50%;
+            animation: spin 1s infinite linear;
+            z-index: 1;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: translate(-50%, -50%) rotate(0deg);
+            }
+
+            100% {
+                transform: translate(-50%, -50%) rotate(360deg);
+            }
         }
 
         #manual-load {
@@ -1046,8 +1089,9 @@
         let specialSlotIndices = new Set();
         let currentSlotIndex = 0;
 
-        // ALMACEN DEL PRE-CALCULO
+        // ALMACÉN DE DATOS PRE-CALCULADOS (SOLO DATOS, NO IMAGENES AUN)
         const draftCache = {};
+        // CACHE DE RUTAS YA ENCONTRADAS (Para no re-buscar)
         const pathCache = new Map();
 
         const translations = {
@@ -1066,69 +1110,63 @@
 
         const baseSeasons = ['IE1', 'IE2', 'IE3', 'IEGO', 'GOCS', 'GOGX', 'ARES', 'ORION', 'VICTORY ROAD'];
 
-        // --- SISTEMA PRE-LOADER MASIVO ---
+        // --- SISTEMA DE CARGA DE IMAGENES PARALELO ---
 
-        // 1. Encontrar ruta válida (Parallel Search)
-        function findValidPath(id, name) {
-            return new Promise((resolve) => {
-                if (pathCache.has(id)) {
-                    resolve(pathCache.get(id));
-                    return;
-                }
+        // Genera todas las posibles rutas para un jugador
+        function generateCandidatePaths(id, name) {
+            const nameClean = name.split('(')[0].trim().replace(/[^a-zA-Z0-9]/g, '');
+            const id4 = String(id).padStart(4, '0');
+            const fileName = `${id4}_${nameClean}.png`;
 
-                const nameClean = name.split('(')[0].trim().replace(/[^a-zA-Z0-9]/g, '');
-                const id4 = String(id).padStart(4, '0');
-                const fileName = `${id4}_${nameClean}.png`;
+            let candidates = [];
+            baseSeasons.forEach(season => {
+                candidates.push(`img/${season}/Scouts/${fileName}`); // Priority
+                candidates.push(`img/${season}/${fileName}`);
+            });
+            return candidates;
+        }
 
-                let candidates = [];
-                baseSeasons.forEach(season => {
-                    candidates.push(`img/${season}/Scouts/${fileName}`);
-                    candidates.push(`img/${season}/${fileName}`);
-                });
+        // Lanza una carrera para encontrar la imagen
+        function findAndLoadImage(imgElement, id, name) {
+            if (pathCache.has(id)) {
+                imgElement.src = pathCache.get(id);
+                imgElement.classList.add('loaded');
+                return;
+            }
 
-                let solved = false;
-                let pending = candidates.length;
+            const candidates = generateCandidatePaths(id, name);
+            let found = false;
 
-                candidates.forEach(src => {
-                    const img = new Image();
-                    img.onload = () => {
-                        if (!solved) {
-                            solved = true;
-                            pathCache.set(id, src);
-                            resolve(src);
-                        }
-                    };
-                    img.onerror = () => {
-                        pending--;
-                        if (pending === 0 && !solved) resolve(null);
-                    };
-                    img.src = src; // Inicia la descarga
-                });
+            candidates.forEach(src => {
+                const img = new Image();
+                img.onload = () => {
+                    if (!found) {
+                        found = true;
+                        pathCache.set(id, src); // Cachear resultado
+                        imgElement.src = src;
+                        imgElement.classList.add('loaded');
+                        // Remover spinner si existe
+                        const loader = imgElement.parentElement.querySelector('.img-loader');
+                        if (loader) loader.remove();
+                    }
+                };
+                img.src = src;
             });
         }
 
-        // 2. Generar 5 candidatos para un slot y precargar imágenes
-        async function preGenerateForSlot(slotIndex, pos, role, isSpecial) {
+        // --- PRE-CALCULO DE DATOS (INSTANTANEO AL INICIAR) ---
+        function preGenerateForSlot(slotIndex, pos, role, isSpecial) {
             let pool = [];
-
             if (role === 'Player') {
                 pool = database.filter(p => p.role === 'Player' && p.perfil.posicion === pos);
             } else {
                 pool = database.filter(p => p.role === role);
             }
 
-            // Excluir repetidos globales (simple check)
-            // Nota: Al pre-generar todo de golpe, algunos jugadores pueden repetirse en diferentes slots
-            // Esto es aceptable para ganar velocidad instantánea.
-
-            const pickUnique = (sourceArr) => {
-                return sourceArr[Math.floor(Math.random() * sourceArr.length)];
-            }
-
+            const pickUnique = (sourceArr) => sourceArr[Math.floor(Math.random() * sourceArr.length)];
             let picks = [];
             let uniqueSet = new Set();
 
-            // LOGICA RATES
             const poolIF = pool.filter(p => calcTotal(p) >= limitIF);
             const poolGoldS = pool.filter(p => calcTotal(p) < limitIF && calcTotal(p) >= limitGoldShiny);
             const poolGold = pool.filter(p => calcTotal(p) < limitGoldShiny && calcTotal(p) >= limitGold);
@@ -1142,11 +1180,10 @@
                     // GOD PACK: 10% IF, 90% Gold Shiny
                     if (rand < 10 && poolIF.length > 0) p = pickUnique(poolIF);
                     else if (poolGoldS.length > 0) p = pickUnique(poolGoldS);
-                    else if (poolGold.length > 0) p = pickUnique(poolGold); // Fallback
+                    else if (poolGold.length > 0) p = pickUnique(poolGold);
                     else p = pickUnique(pool);
                 } else {
                     // NORMAL RATES
-                    // 0.5% IF, 5.5% GoldS, 25% Gold
                     if (rand < 0.5 && poolIF.length > 0) p = pickUnique(poolIF);
                     else if (rand < 6.0 && poolGoldS.length > 0) p = pickUnique(poolGoldS);
                     else if (rand < 31.0 && poolGold.length > 0) p = pickUnique(poolGold);
@@ -1157,26 +1194,14 @@
                     uniqueSet.add(p.id);
                     picks.push(p);
                 } else {
-                    i--; // Retry
-                    if (uniqueSet.size >= pool.length) break; // Evitar loop infinito
+                    i--;
+                    if (uniqueSet.size >= pool.length) break;
                 }
             }
-
-            // LANZAR PRECARGA DE IMAGENES
-            // Guardamos la promesa de la ruta en el objeto del jugador
-            const processedPicks = await Promise.all(picks.map(async (p) => {
-                const src = await findValidPath(p.id, p.nombre);
-                return { ...p, imgSrc: src };
-            }));
-
-            draftCache[slotIndex] = processedPicks;
+            draftCache[slotIndex] = picks;
         }
 
-        // 3. Ejecutar pre-carga masiva
-        async function preGenerateEntireDraft() {
-            const promises = [];
-
-            // Recorrer formacion
+        function preGenerateEntireDraft() {
             let slotIndex = 0;
             const layout = formations[currentFormation];
 
@@ -1184,35 +1209,28 @@
             layout.forEach(row => {
                 row.forEach(pos => {
                     const isSpecial = specialSlotIndices.has(slotIndex);
-                    promises.push(preGenerateForSlot(slotIndex, pos, 'Player', isSpecial));
+                    preGenerateForSlot(slotIndex, pos, 'Player', isSpecial);
                     slotIndex++;
                 });
             });
 
-            // Banquillo (5)
+            // Banquillo
             for (let i = 0; i < 5; i++) {
                 const isSpecial = specialSlotIndices.has(slotIndex);
-                promises.push(preGenerateForSlot(slotIndex, 'Player', 'Player', isSpecial));
+                preGenerateForSlot(slotIndex, 'Player', 'Player', isSpecial);
                 slotIndex++;
             }
 
-            // Manager (1)
-            promises.push(preGenerateForSlot(slotIndex, 'Manager', 'Manager', true)); // Siempre especial visualmente
+            // Manager
+            preGenerateForSlot(slotIndex, 'Manager', 'Manager', true);
             slotIndex++;
 
-            // Coordinadores (3)
+            // Coordinadores
             for (let i = 0; i < 3; i++) {
-                promises.push(preGenerateForSlot(slotIndex, 'Coordinator', 'Coordinator', true));
+                preGenerateForSlot(slotIndex, 'Coordinator', 'Coordinator', true);
                 slotIndex++;
             }
-
-            await Promise.all(promises);
-            console.log("DRAFT PRE-GENERADO Y LISTO");
-        }
-
-        function getSafeName(name) {
-            let str = name.toLowerCase();
-            return str.replace(/[^a-z0-9]/g, '');
+            console.log("Datos de draft pre-calculados.");
         }
 
         function getBaseName(name) {
@@ -1331,7 +1349,6 @@
             pickedIDs.clear();
             pickedBaseNames.clear();
 
-            // Reiniciar caches
             for (let key in draftCache) delete draftCache[key];
 
             document.getElementById('reserves-section').style.display = 'none';
@@ -1358,7 +1375,7 @@
             coordinatorsRow.innerHTML = "";
             for (let i = 0; i < 3; i++) createSlot(coordinatorsRow, "Coordinator", "Coordinator", true, true);
 
-            // INICIAR PRE-CÁLCULO (ASINCRONO)
+            // CALCULO MASIVO DE DATOS (Rapido)
             preGenerateEntireDraft();
         }
 
@@ -1370,7 +1387,6 @@
             const isSpecial = specialSlotIndices.has(currentSlotIndex);
             if (isSpecial) classes += ' god-ready';
 
-            // Guardar indice actual para recuperar del cache
             const mySlotIndex = currentSlotIndex;
             currentSlotIndex++;
 
@@ -1402,13 +1418,12 @@
             if (isSpecial) modalBox.classList.add('god-pack');
             else modalBox.classList.remove('god-pack');
 
-            // RECUPERAR DATOS PRE-GENERADOS
+            // USAR DATOS PRE-CALCULADOS
             const picks = draftCache[slotIndex];
 
             if (!picks || picks.length === 0) {
-                // Si por alguna razón aun no ha terminado (muy raro), fallback visual
+                // Fallback por si acaso
                 container.innerHTML = `<p style="color:#fff">Generando opciones...</p>`;
-                // Reintentar en 500ms
                 setTimeout(() => openModal(slot, posCode, isSpecial, slotIndex), 500);
                 return;
             }
@@ -1423,7 +1438,7 @@
 
                 const card = document.createElement('div');
                 card.className = `choice-card ${rareClass}`;
-                card.style.animationDelay = `${index * 0.1}s`; // Animación cascada CSS
+                card.style.animationDelay = `${index * 0.1}s`;
 
                 const rawElem = p.perfil ? p.perfil.elemento : "Void";
                 const elemEs = translations.elem[rawElem] || rawElem;
@@ -1439,11 +1454,11 @@
                     statsHtml += `</div>`;
                 }
 
-                // Usamos la imagen PRE-CARGADA
                 card.innerHTML = `
                     <div class="choice-score ${rareClass}">${total}</div>
                     <div class="choice-img-box">
-                        <img src="${p.imgSrc || ''}" class="choice-img">
+                        <div class="img-loader"></div>
+                        <img src="" class="choice-img">
                     </div>
                     <div class="choice-info">
                         <div class="choice-name">${p.nombre}</div>
@@ -1452,12 +1467,16 @@
                     </div>
                 `;
 
-                card.onclick = () => fillSlot(p, total, elemEs, rareClass, p.imgSrc);
+                // INICIAR CARGA DE IMAGEN AL RENDERIZAR
+                const img = card.querySelector('img');
+                findAndLoadImage(img, p.id, p.nombre);
+
+                card.onclick = () => fillSlot(p, total, elemEs, rareClass);
                 container.appendChild(card);
             });
         }
 
-        function fillSlot(p, total, elemEs, rareClass, imgSrc) {
+        function fillSlot(p, total, elemEs, rareClass) {
             pickedIDs.add(p.id);
             pickedBaseNames.add(getBaseName(p.nombre));
 
@@ -1470,13 +1489,17 @@
             slot.innerHTML = `
                 <div class="mini-player">
                     <div class="mini-badge el-${elemEs}">${pos}</div>
-                    <img src="${imgSrc || ''}" class="mini-img">
+                    <div class="img-loader" style="width:20px; height:20px; border-width:2px;"></div>
+                    <img src="" class="mini-img">
                     <div class="mini-info">
                         <div class="mini-name">${p.nombre}</div>
                         <div class="mini-total">TOT: ${total}</div>
                     </div>
                 </div>
             `;
+
+            const img = slot.querySelector('img');
+            findAndLoadImage(img, p.id, p.nombre);
 
             teamTotal += total; updateStats(); closeModal();
 
@@ -1520,8 +1543,7 @@
                     `;
 
                     const img = div.querySelector('img');
-                    // Carga directa en reservas
-                    findValidPath(pick.id, pick.nombre).then(src => { if (src) img.src = src; });
+                    findAndLoadImage(img, pick.id, pick.nombre);
 
                     container.appendChild(div);
                 }
