@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Inazuma Draft - Instant Flow</title>
+    <title>Inazuma Draft - Instant Load</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="data.js" onerror="console.log('Modo manual activo')"></script>
 
@@ -477,7 +477,6 @@
             overflow: hidden;
         }
 
-        /* IMAGEN ANIMADA FADE IN */
         .mini-img {
             width: 120%;
             height: 90%;
@@ -488,12 +487,6 @@
             left: -10%;
             filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.6));
             transition: transform 0.3s ease;
-            opacity: 0;
-            transition: opacity 0.5s;
-        }
-
-        .mini-img.loaded {
-            opacity: 1;
         }
 
         .slot.filled:hover .mini-img {
@@ -693,12 +686,6 @@
             position: absolute;
             bottom: 20%;
             filter: grayscale(0.5);
-            opacity: 0;
-            transition: opacity 0.5s;
-        }
-
-        .reserve-img.loaded {
-            opacity: 1;
         }
 
         .reserve-slot:hover .reserve-img {
@@ -786,6 +773,48 @@
             min-height: 400px;
         }
 
+        /* LOADER OVERLAY */
+        #pack-loader {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #111;
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            transition: opacity 0.3s;
+        }
+
+        .loader-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #333;
+            border-top: 5px solid var(--accent-gold-bright);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loader-text {
+            font-family: 'Orbitron';
+            color: #fff;
+            letter-spacing: 2px;
+        }
+
         .choice-card {
             background: #252525;
             border: 2px solid #444;
@@ -799,27 +828,9 @@
             width: 230px;
             height: 340px;
             flex-shrink: 0;
-            opacity: 0;
-            /* EMPIEZA OCULTO */
+            /* opacity: 0;  REMOVED FOR PRELOADER LOGIC */
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
             transform: skewX(-2deg);
-        }
-
-        /* ANIMACION DE ENTRADA */
-        .choice-card.revealed {
-            animation: slideUpFade 0.5s forwards cubic-bezier(0.2, 0.8, 0.2, 1);
-        }
-
-        @keyframes slideUpFade {
-            from {
-                opacity: 0;
-                transform: skewX(-2deg) translateY(50px);
-            }
-
-            to {
-                opacity: 1;
-                transform: skewX(-2deg) translateY(0);
-            }
         }
 
         .choice-card:hover {
@@ -864,20 +875,11 @@
             position: relative;
         }
 
-        /* LA IMAGEN EMPIEZA INVISIBLE PARA NO VER EL ICONO ROTO */
         .choice-img {
             height: 95%;
             filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.8));
             z-index: 2;
-            opacity: 0;
-            transition: opacity 0.5s;
         }
-
-        .choice-img.loaded {
-            opacity: 1;
-        }
-
-        /* SE MUESTRA AL CARGAR */
 
         .choice-info {
             padding: 15px;
@@ -1054,6 +1056,10 @@
 
     <div class="modal-overlay" id="draftModal">
         <div class="modal-content" id="modalBox">
+            <div id="pack-loader">
+                <div class="loader-spinner"></div>
+                <div class="loader-text">ABRIENDO SOBRE...</div>
+            </div>
             <div class="modal-header">
                 <h2 id="modalTitle"></h2>
             </div>
@@ -1076,8 +1082,7 @@
         let specialSlotIndices = new Set();
         let currentSlotIndex = 0;
 
-        // ALMACEN DEL PRE-CALCULO
-        const draftCache = {};
+        // CACHE DE RUTAS PARA VELOCIDAD EXTREMA
         const pathCache = new Map();
 
         const translations = {
@@ -1131,7 +1136,7 @@
                         pending--;
                         if (pending === 0 && !solved) resolve(null); // No encontrada
                     };
-                    img.src = src; // Inicia la descarga
+                    img.src = src;
                 });
             });
         }
@@ -1139,100 +1144,17 @@
         // --- SOLO PARA EL CAMPO (Carga normal) ---
         window.loadKnownImage = function (img, id, name) {
             findValidPath(id, name).then(src => {
-                if (src) {
-                    img.src = src;
-                    img.classList.add('loaded');
-                } else {
-                    img.style.opacity = '0.3';
-                }
+                if (src) img.src = src;
+                else img.style.opacity = '0.3';
             });
         };
 
-        // 2. Generar 5 candidatos para un slot (SOLO DATOS, RAPIDO)
-        function preGenerateForSlot(slotIndex, pos, role, isSpecial) {
-            let pool = [];
-
-            if (role === 'Player') {
-                pool = database.filter(p => p.role === 'Player' && p.perfil.posicion === pos);
-            } else {
-                pool = database.filter(p => p.role === role);
-            }
-
-            const pickUnique = (sourceArr) => {
-                return sourceArr[Math.floor(Math.random() * sourceArr.length)];
-            }
-
-            let picks = [];
-            let uniqueSet = new Set();
-
-            // LOGICA RATES
-            const poolIF = pool.filter(p => calcTotal(p) >= limitIF);
-            const poolGoldS = pool.filter(p => calcTotal(p) < limitIF && calcTotal(p) >= limitGoldShiny);
-            const poolGold = pool.filter(p => calcTotal(p) < limitGoldShiny && calcTotal(p) >= limitGold);
-            const poolRest = pool.filter(p => calcTotal(p) < limitGold);
-
-            for (let i = 0; i < 5; i++) {
-                let p = null;
-                let rand = Math.random() * 100;
-
-                if (isSpecial) {
-                    // GOD PACK: 10% IF, 90% Gold Shiny
-                    if (rand < 10 && poolIF.length > 0) p = pickUnique(poolIF);
-                    else if (poolGoldS.length > 0) p = pickUnique(poolGoldS);
-                    else if (poolGold.length > 0) p = pickUnique(poolGold); // Fallback
-                    else p = pickUnique(pool);
-                } else {
-                    // NORMAL RATES
-                    if (rand < 0.5 && poolIF.length > 0) p = pickUnique(poolIF);
-                    else if (rand < 6.0 && poolGoldS.length > 0) p = pickUnique(poolGoldS);
-                    else if (rand < 31.0 && poolGold.length > 0) p = pickUnique(poolGold);
-                    else p = pickUnique(poolRest.length > 0 ? poolRest : pool);
-                }
-
-                if (p && !uniqueSet.has(p.id)) {
-                    uniqueSet.add(p.id);
-                    picks.push(p);
-                } else {
-                    i--; // Retry
-                    if (uniqueSet.size >= pool.length) break;
-                }
-            }
-
-            // GUARDAR DATOS JSON
-            draftCache[slotIndex] = picks;
-        }
-
-        // 3. Ejecutar pre-calculo ( SIN IMAGENES )
-        function preGenerateEntireDraft() {
-            let slotIndex = 0;
-            const layout = formations[currentFormation];
-
-            // Campo
-            layout.forEach(row => {
-                row.forEach(pos => {
-                    const isSpecial = specialSlotIndices.has(slotIndex);
-                    preGenerateForSlot(slotIndex, pos, 'Player', isSpecial);
-                    slotIndex++;
-                });
-            });
-
-            // Banquillo
-            for (let i = 0; i < 5; i++) {
-                const isSpecial = specialSlotIndices.has(slotIndex);
-                preGenerateForSlot(slotIndex, 'Player', 'Player', isSpecial);
-                slotIndex++;
-            }
-
-            // Manager
-            preGenerateForSlot(slotIndex, 'Manager', 'Manager', true);
-            slotIndex++;
-
-            // Coordinadores
-            for (let i = 0; i < 3; i++) {
-                preGenerateForSlot(slotIndex, 'Coordinator', 'Coordinator', true);
-                slotIndex++;
-            }
-            console.log("Datos de draft pre-calculados (sin imágenes).");
+        function getSafeName(name) {
+            let str = name.toLowerCase();
+            const map = { 'ă': 'a', 'â': 'a', 'î': 'i', 'ș': 's', 'ț': 't', 'ñ': 'n', 'ß': 's', 'ö': 'o', 'ä': 'a', 'ü': 'u' };
+            for (let char in map) str = str.replace(new RegExp(char, 'g'), map[char]);
+            str = str.replace(/[áéíóú]/g, '');
+            return str.replace(/[^a-z0-9]/g, '');
         }
 
         function getBaseName(name) {
@@ -1294,7 +1216,6 @@
             document.getElementById('config-overlay').style.display = 'none';
             document.getElementById('main-header').style.display = 'flex';
             document.getElementById('main-layout').style.display = 'flex';
-
             initDraft();
         }
 
@@ -1350,13 +1271,9 @@
             teamTotal = 0; updateStats();
             pickedIDs.clear();
             pickedBaseNames.clear();
-
-            for (let key in draftCache) delete draftCache[key];
-
             document.getElementById('reserves-section').style.display = 'none';
             document.getElementById('reserves-container').innerHTML = '';
             generateSpecialSlots();
-
             currentSlotIndex = 0;
 
             formations[currentFormation].forEach(row => {
@@ -1376,9 +1293,6 @@
             const coordinatorsRow = document.getElementById('coordinators-row');
             coordinatorsRow.innerHTML = "";
             for (let i = 0; i < 3; i++) createSlot(coordinatorsRow, "Coordinator", "Coordinator", true, true);
-
-            // CALCULO MASIVO DE DATOS (INSTANTANEO)
-            preGenerateEntireDraft();
         }
 
         function createSlot(parent, posCode, role, strict, isBench, isBigBoss = false) {
@@ -1388,8 +1302,6 @@
             if (isBigBoss) classes += ' big-boss';
             const isSpecial = specialSlotIndices.has(currentSlotIndex);
             if (isSpecial) classes += ' god-ready';
-
-            const mySlotIndex = currentSlotIndex;
             currentSlotIndex++;
 
             slot.className = classes;
@@ -1399,47 +1311,149 @@
 
             slot.onclick = () => {
                 if (slot.classList.contains('filled')) return;
-                openModal(slot, posCode, isSpecial, mySlotIndex);
+                openModal(slot, posCode, role, strict, isSpecial);
             };
             parent.appendChild(slot);
         }
 
         let activeSlot = null;
-
-        function openModal(slot, posCode, isSpecial, slotIndex) {
+        async function openModal(slot, posCode, role, strict, isSpecial) {
             activeSlot = slot;
             const modal = document.getElementById('draftModal');
             const modalBox = document.getElementById('modalBox');
             const container = document.getElementById('modalOptions');
             const title = document.getElementById('modalTitle');
+            const loader = document.getElementById('pack-loader');
 
             modal.style.display = 'flex';
             container.innerHTML = '';
+
+            // SHOW LOADER
+            loader.style.display = 'flex';
+            loader.style.opacity = '1';
+
             title.innerText = (translations.pos[posCode] || posCode);
 
-            if (isSpecial) modalBox.classList.add('god-pack');
-            else modalBox.classList.remove('god-pack');
-
-            // RECUPERAR DATOS PRE-CALCULADOS
-            const picks = draftCache[slotIndex];
-
-            if (!picks || picks.length === 0) {
-                // Fallback por si acaso
-                container.innerHTML = `<p style="color:#fff">Generando opciones...</p>`;
-                setTimeout(() => openModal(slot, posCode, isSpecial, slotIndex), 500);
-                return;
+            if (isSpecial) {
+                modalBox.classList.add('god-pack');
+            } else {
+                modalBox.classList.remove('god-pack');
             }
 
-            renderPicks(picks, container);
+            let pool = [];
+            // FILTER BY ROLE AND POSITION STRICTLY
+            if (role === 'Player') {
+                pool = (strict && posCode !== 'Player') ? database.filter(p => p.role === 'Player' && p.perfil.posicion === posCode) : database.filter(p => p.role === 'Player');
+            } else {
+                pool = database.filter(p => p.role === role);
+            }
+
+            if (role === 'Manager') pool = pool.filter(p => p.role === 'Manager');
+            if (role === 'Coordinator') pool = pool.filter(p => p.role === 'Coordinator');
+            if (role === 'Player') pool = pool.filter(p => p.role === 'Player');
+
+            pool = pool.filter(p => !pickedIDs.has(p.id));
+            pool = pool.filter(p => !pickedBaseNames.has(getBaseName(p.nombre)));
+
+            let picks = [];
+            let roundNames = new Set();
+
+            const pickUnique = (sourceArr) => {
+                let shuffled = [...sourceArr].sort(() => 0.5 - Math.random());
+                for (let p of shuffled) {
+                    let bName = getBaseName(p.nombre);
+                    if (!roundNames.has(bName)) {
+                        roundNames.add(bName);
+                        return p;
+                    }
+                }
+                return null;
+            }
+
+            // GOD PACK RATES: 10% IF, 90% Gold Shiny (Fallback Gold Normal)
+            if (isSpecial) {
+                const poolIF = pool.filter(p => calcTotal(p) >= limitIF);
+                const poolGoldS = pool.filter(p => calcTotal(p) < limitIF && calcTotal(p) >= limitGoldShiny);
+                const poolGold = pool.filter(p => calcTotal(p) < limitGoldShiny && calcTotal(p) >= limitGold);
+
+                for (let i = 0; i < 5; i++) {
+                    let rand = Math.random() * 100;
+                    let chosenPool = [];
+
+                    if (rand < 10 && poolIF.length > 0) chosenPool = poolIF;
+                    else if (poolGoldS.length > 0) chosenPool = poolGoldS;
+                    else chosenPool = poolGold.length > 0 ? poolGold : poolIF;
+
+                    let p = pickUnique(chosenPool);
+                    if (!p) p = pickUnique(poolGoldS);
+                    if (!p) p = pickUnique(poolIF);
+                    if (!p) p = pickUnique(poolGold);
+
+                    if (p) picks.push(p);
+                }
+
+            } else {
+                // NORMAL RATES
+                const t1 = pool.filter(p => calcTotal(p) >= limitIF);
+                const t2 = pool.filter(p => calcTotal(p) < limitIF && calcTotal(p) >= limitGoldShiny);
+                const t3 = pool.filter(p => calcTotal(p) < limitGoldShiny && calcTotal(p) >= limitGold);
+                const t4 = pool.filter(p => calcTotal(p) < limitGold && calcTotal(p) >= limitSilverShiny);
+                const t5 = pool.filter(p => calcTotal(p) < limitSilverShiny);
+
+                for (let i = 0; i < 5; i++) {
+                    let rand = Math.random() * 100;
+                    let tierPool = [];
+
+                    if (rand < 0.5 && t1.length > 0) tierPool = t1;
+                    else if (rand < 5.5 && t2.length > 0) tierPool = t2;
+                    else if (rand < 25.5 && t3.length > 0) tierPool = t3;
+                    else if (rand < 75.5 && t4.length > 0) tierPool = t4;
+                    else tierPool = t5.length > 0 ? t5 : pool;
+
+                    let p = pickUnique(tierPool);
+                    if (!p) {
+                        let allShuffled = [...pool].sort(() => 0.5 - Math.random());
+                        for (let candidate of allShuffled) {
+                            let bName = getBaseName(candidate.nombre);
+                            if (!roundNames.has(bName)) {
+                                p = candidate; roundNames.add(bName); break;
+                            }
+                        }
+                    }
+                    if (p) picks.push(p);
+                }
+            }
+
+            // --- PRE-LOADER MAGIC ---
+            // 1. Resolvemos todas las rutas ANTES de pintar
+            const promises = picks.map(p => findValidPath(p.id, p.nombre).then(src => ({ ...p, imgSrc: src })));
+            const readyPlayers = await Promise.all(promises);
+
+            // 2. Pintamos
+            renderPicks(readyPlayers, container);
+
+            // 3. Ocultamos Loader
+            loader.style.opacity = '0';
+            setTimeout(() => { loader.style.display = 'none'; }, 300);
         }
 
         function renderPicks(players, container) {
+            if (players.length === 0) {
+                container.innerHTML = `
+                    <div style="display:flex; flex-direction:column; align-items:center; gap:20px;">
+                        <p style='color: #888; font-size: 1.2rem; font-family:"Orbitron"'>NO QUEDAN JUGADORES DISPONIBLES</p>
+                        <button onclick="closeModal()" class="btn-small">CERRAR</button>
+                    </div>
+                `;
+                return;
+            }
+
             players.forEach((p, index) => {
                 const total = calcTotal(p);
                 const rareClass = getTotalColorClass(total);
 
                 const card = document.createElement('div');
-                card.className = `choice-card ${rareClass} revealed`; // Clase de animación
+                card.className = `choice-card ${rareClass}`;
                 card.style.animationDelay = `${index * 0.1}s`;
 
                 const rawElem = p.perfil ? p.perfil.elemento : "Void";
@@ -1455,11 +1469,10 @@
                     }
                     statsHtml += `</div>`;
                 }
-
                 card.innerHTML = `
                     <div class="choice-score ${rareClass}">${total}</div>
                     <div class="choice-img-box">
-                        <img src="" class="choice-img">
+                        <img src="${p.imgSrc || ''}" class="choice-img">
                     </div>
                     <div class="choice-info">
                         <div class="choice-name">${p.nombre}</div>
@@ -1467,11 +1480,6 @@
                         ${statsHtml}
                     </div>
                 `;
-
-                // --- INICIO DE CARGA EN SEGUNDO PLANO ---
-                // Se busca la imagen AHORA, mientras ocurre la animación de entrada
-                const img = card.querySelector('img');
-                loadKnownImage(img, p.id, p.nombre);
 
                 card.onclick = () => fillSlot(p, total, elemEs, rareClass, p.imgSrc);
                 container.appendChild(card);
@@ -1498,11 +1506,6 @@
                     </div>
                 </div>
             `;
-
-            const img = slot.querySelector('img');
-            // Si por alguna razón no estaba cacheada, se busca de nuevo
-            if (!img.src) loadKnownImage(img, p.id, p.nombre);
-            else img.classList.add('loaded');
 
             teamTotal += total; updateStats(); closeModal();
 
