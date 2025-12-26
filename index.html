@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Inazuma Draft - Ultimate Pack Opening</title>
+    <title>Inazuma Draft - Fixed Images</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="data.js" onerror="console.log('Modo manual activo')"></script>
 
@@ -487,6 +487,12 @@
             left: -10%;
             filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.6));
             transition: transform 0.3s ease;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        .mini-img.loaded {
+            opacity: 1;
         }
 
         .slot.filled:hover .mini-img {
@@ -686,6 +692,12 @@
             position: absolute;
             bottom: 20%;
             filter: grayscale(0.5);
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        .reserve-img.loaded {
+            opacity: 1;
         }
 
         .reserve-slot:hover .reserve-img {
@@ -761,7 +773,6 @@
             color: #fff;
         }
 
-        /* FIX: Ocultar scrollbar durante animacion */
         .modal-grid {
             display: flex;
             flex-wrap: nowrap;
@@ -775,7 +786,7 @@
             min-height: 400px;
         }
 
-        /* --- PACK ANIMATION SOFT --- */
+        /* --- PACK ANIMATION --- */
         #pack-loader {
             position: absolute;
             top: 0;
@@ -803,7 +814,6 @@
             overflow: hidden;
             transform-style: preserve-3d;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            /* Animación base rápida */
             animation: shake-fast 0.3s infinite ease-in-out;
         }
 
@@ -842,7 +852,6 @@
             z-index: 2;
         }
 
-        /* ANIMACIÓN DE APERTURA FLASH */
         .pack-visual.opening {
             animation: dramatic-open-flash 0.6s forwards cubic-bezier(0.6, 0.04, 0.98, 0.335);
         }
@@ -876,14 +885,12 @@
             }
         }
 
-        /* TRANSICION SUAVE (NO FLASHBANG) */
         .pack-flash {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            /* GRADIENTE SUAVE EN VEZ DE BLANCO SOLIDO */
             background: radial-gradient(circle, rgba(255, 255, 200, 0.3) 0%, transparent 70%);
             z-index: 300;
             opacity: 0;
@@ -903,7 +910,6 @@
                 opacity: 1;
             }
 
-            /* Maximo brillo muy bajo */
             100% {
                 opacity: 0;
             }
@@ -948,7 +954,6 @@
             z-index: 100;
         }
 
-        /* ... RESTO DE ESTILOS ... */
         .choice-card.s-if {
             border: 2px solid var(--c-if-border);
             background: var(--c-if-bg);
@@ -976,7 +981,6 @@
             background: var(--c-silver-bg);
         }
 
-        /* IMPORTANT: Opacidad inicial a 0 y transicion */
         .choice-img-box {
             height: 190px;
             width: 100%;
@@ -987,6 +991,7 @@
             position: relative;
         }
 
+        /* AQUI ESTÁ EL ARREGLO PRINCIPAL */
         .choice-img {
             height: 95%;
             filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.8));
@@ -1218,7 +1223,6 @@
 
         const baseSeasons = ['IE1', 'IE2', 'IE3', 'IEGO', 'GOCS', 'GOGX', 'ARES', 'ORION', 'VICTORY ROAD'];
 
-        // --- PRE-LOADER INTELIGENTE ---
         function findValidPath(id, name) {
             return new Promise((resolve) => {
                 if (pathCache.has(id)) {
@@ -1259,7 +1263,10 @@
 
         window.loadKnownImage = function (img, id, name) {
             findValidPath(id, name).then(src => {
-                if (src) img.src = src;
+                if (src) {
+                    img.src = src;
+                    img.classList.add('loaded'); // Asegurar visibilidad en el campo
+                }
                 else img.style.opacity = '0.3';
             });
         };
@@ -1448,7 +1455,6 @@
             flash.classList.remove('active');
             packVisual.className = 'pack-visual';
 
-            // Scroll oculto durante animacion
             const grid = document.querySelector('.modal-grid');
             if (grid) grid.style.overflowX = 'hidden';
 
@@ -1457,7 +1463,6 @@
             if (isSpecial) modalBox.classList.add('god-pack');
             else modalBox.classList.remove('god-pack');
 
-            // --- LÓGICA DE SELECCIÓN DE JUGADORES ---
             let pool = [];
             if (role === 'Player') {
                 pool = (strict && posCode !== 'Player') ? database.filter(p => p.role === 'Player' && p.perfil.posicion === posCode) : database.filter(p => p.role === 'Player');
@@ -1523,41 +1528,30 @@
                 }
             }
 
-            // --- DETERMINAR TIPO DE SOBRE BASADO EN EL CONTENIDO ---
             let packTierClass = 'p-bronze'; // Default
             if (isSpecial) {
                 packTierClass = 'p-god';
             } else {
-                // Calcular media de los 5 jugadores
                 const avgTotal = picks.reduce((sum, p) => sum + calcTotal(p), 0) / (picks.length || 1);
-
                 if (avgTotal >= limitGold) packTierClass = 'p-gold';
                 else if (avgTotal >= limitSilverShiny) packTierClass = 'p-silver';
-                // si es menor, se queda en p-bronze
             }
-            // Aplicar clase de color al sobre
             packVisual.classList.add(packTierClass);
 
-            // --- SECUENCIA DE ANIMACIÓN (FLASH SPEED) ---
             const loadingPromises = picks.map(p => findValidPath(p.id, p.nombre).then(src => ({ ...p, imgSrc: src })));
 
-            // Tiempo reducido a 0.6s
             setTimeout(() => { packVisual.classList.add('opening'); }, 10);
             const animationTime = new Promise(resolve => setTimeout(resolve, 600));
 
             const [readyPlayers] = await Promise.all([Promise.all(loadingPromises), animationTime]);
 
-            // FLASH!
             flash.classList.add('active');
 
             setTimeout(() => {
                 loader.style.opacity = '0';
                 setTimeout(() => { loader.style.display = 'none'; }, 100);
                 renderPicks(readyPlayers, container);
-
-                // Reactivar scroll tras mostrar
                 setTimeout(() => { if (grid) grid.style.overflowX = 'auto'; }, 600);
-
             }, 300);
         }
 
@@ -1568,7 +1562,7 @@
 
                 const card = document.createElement('div');
                 card.className = `choice-card ${rareClass} revealed`;
-                card.style.animationDelay = `${index * 0.08}s`; // Stagger muy rapido
+                card.style.animationDelay = `${index * 0.08}s`;
 
                 const rawElem = p.perfil ? p.perfil.elemento : "Void";
                 const elemEs = translations.elem[rawElem] || rawElem;
@@ -1583,10 +1577,15 @@
                     }
                     statsHtml += `</div>`;
                 }
+
+                // --- FIX: Añadir onload y onerror ---
                 card.innerHTML = `
                     <div class="choice-score ${rareClass}">${total}</div>
                     <div class="choice-img-box">
-                        <img src="${p.imgSrc || ''}" class="choice-img">
+                        <img src="${p.imgSrc || ''}" 
+                             class="choice-img" 
+                             onload="this.classList.add('loaded')" 
+                             onerror="this.src=''">
                     </div>
                     <div class="choice-info">
                         <div class="choice-name">${p.nombre}</div>
@@ -1613,7 +1612,8 @@
             slot.innerHTML = `
                 <div class="mini-player">
                     <div class="mini-badge el-${elemEs}">${pos}</div>
-                    <img src="${imgSrc || ''}" class="mini-img loaded"> <div class="mini-info">
+                    <img src="${imgSrc || ''}" class="mini-img loaded">
+                    <div class="mini-info">
                         <div class="mini-name">${p.nombre}</div>
                         <div class="mini-total">TOT: ${total}</div>
                     </div>
