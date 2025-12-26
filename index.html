@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Inazuma Draft - Ultra Smooth Final</title>
+    <title>Inazuma Draft - Ultra Smooth Final V2</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="data.js" onerror="console.log('Modo manual activo')"></script>
 
@@ -441,11 +441,6 @@
             text-shadow: none;
         }
 
-        .slot.filled.s-gold-s .mini-info {
-            /* Mantenemos un fondo muy sutil o nulo aquí, ya que el degradado principal lo controla .mini-info */
-            /* Se podría quitar o ajustar si se desea */
-        }
-
         .slot.filled.s-gold {
             background: var(--c-gold-bg);
             border-color: var(--c-gold-border);
@@ -460,10 +455,6 @@
         .slot.filled.s-silver-s .mini-name {
             color: #222;
             text-shadow: none;
-        }
-
-        .slot.filled.s-silver-s .mini-info {
-            /* Igual que arriba */
         }
 
         .slot.filled.s-silver {
@@ -490,29 +481,33 @@
             overflow: hidden;
         }
 
-        /* --- CAMBIOS SOLICITADOS EN MINI CARTA --- */
+        /* --- CAMBIOS SOLICITADOS EN MINI CARTA (POSICIÓN ALTA) --- */
 
         .mini-img {
             width: 120%;
-            height: 100%;
-            /* Ocupa toda la altura */
+            /* Mantiene el ancho para que se salga un poco por los lados */
+            height: 85%;
+            /* Altura reducida: la imagen no llega hasta abajo del todo */
             object-fit: contain;
-            object-position: bottom;
+            object-position: center;
+            /* Centra la imagen dentro de su caja de altura reducida */
             position: absolute;
-            bottom: 10%;
-            /* Pegado al fondo */
+            top: 8%;
+            /* La bajamos un poco del borde superior */
             left: -10%;
+            /* Eliminamos bottom: 0 para que no se ancle abajo */
+
             filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.6));
 
-            /* Efecto de desvanecido suave en la parte inferior */
-            -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
-            mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+            /* Ajustamos la máscara: el degradado empieza antes (60%) y termina casi al final de la caja de la imagen (98%) */
+            /* Esto hace que los pies se vuelvan transparentes "en el aire" antes de que acabe la carta */
+            -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 98%);
+            mask-image: linear-gradient(to bottom, black 60%, transparent 98%);
 
             transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.5s;
             transform: translateZ(0);
             opacity: 0;
             z-index: 1;
-            /* Detrás del texto */
         }
 
         .mini-img.loaded {
@@ -528,14 +523,9 @@
             bottom: 0;
             width: 100%;
             height: auto;
-            /* Altura automática */
             padding-bottom: 8px;
             padding-top: 15px;
-            /* Espacio para el degradado */
-
-            /* Degradado sutil en vez de fondo sólido o barra */
             background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, transparent 100%);
-
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
@@ -544,14 +534,12 @@
             pointer-events: none;
         }
 
-        /* Eliminamos el "suelo" o barra superior anterior */
         .mini-info::before {
             display: none;
         }
 
         .mini-name {
             font-size: 0.75rem;
-            /* Más pequeño */
             color: #fff;
             font-weight: 800;
             white-space: nowrap;
@@ -562,8 +550,6 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-bottom: 0px;
-
-            /* Sombra fuerte para legibilidad sin barra */
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9), 0 0 2px rgba(0, 0, 0, 1);
             z-index: 3;
         }
@@ -571,13 +557,10 @@
         .mini-total {
             font-family: 'Orbitron';
             font-size: 0.85rem;
-            /* Más compacto */
             margin-top: 0px;
             font-weight: 900;
             font-style: italic;
             color: #fff;
-
-            /* Sombra fuerte */
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9), 0 0 2px rgba(0, 0, 0, 1);
             z-index: 3;
         }
