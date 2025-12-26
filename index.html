@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Inazuma Draft Ultimate - Final Rates</title>
+    <title>Inazuma Draft Ultimate - Final Version</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="data.js" onerror="console.log('Modo manual activo')"></script>
 
@@ -13,35 +13,23 @@
         :root {
             --bg-dark: #0a0a0a;
             --bg-panel: rgba(20, 20, 20, 0.95);
-
-            /* Colores de Interfaz */
             --accent-gold: #c5a059;
             --accent-gold-bright: #f1c40f;
             --text-main: #ecf0f1;
 
-            /* --- RAREZAS --- */
-            /* 1. IN FORM (IF) */
+            /* RAREZAS */
             --c-if-border: #f1c40f;
             --c-if-bg: #000;
             --c-if-text: #f1c40f;
             --c-if-shadow: rgba(241, 196, 15, 0.6);
-
-            /* 2. GOLD SHINY */
             --c-gold-s-border: #f9e79f;
             --c-gold-s-bg: linear-gradient(135deg, #8a6e2f, #d4ac0d);
-
-            /* 3. GOLD */
             --c-gold-border: #705b2e;
             --c-gold-bg: #362e1e;
-
-            /* 4. SILVER SHINY */
             --c-silver-s-border: #a0a0a0;
             --c-silver-s-bg: linear-gradient(135deg, #555, #888);
-
-            /* 5. SILVER */
             --c-silver-border: #444;
             --c-silver-bg: #1c1c1c;
-
             --stat-low: #e74c3c;
             --stat-mid: #f39c12;
             --stat-high: #2ecc71;
@@ -66,7 +54,7 @@
             padding-bottom: 120px;
         }
 
-        /* --- CONFIGURACIÓN --- */
+        /* UI CONFIG */
         #config-overlay {
             position: fixed;
             top: 0;
@@ -89,10 +77,10 @@
             border-radius: 8px;
             box-shadow: 0 0 50px rgba(197, 160, 89, 0.1);
             text-align: center;
+            width: 500px;
             display: flex;
             flex-direction: column;
             gap: 25px;
-            width: 500px;
         }
 
         .config-title {
@@ -133,14 +121,12 @@
             flex-direction: column;
             justify-content: space-evenly;
             padding: 10px;
-            position: relative;
         }
 
         .preview-row {
             display: flex;
             justify-content: center;
             gap: 12px;
-            z-index: 2;
         }
 
         .preview-dot {
@@ -167,7 +153,7 @@
             cursor: pointer;
             text-transform: uppercase;
             letter-spacing: 2px;
-            transition: all 0.2s ease;
+            transition: 0.2s;
         }
 
         .btn-start:hover {
@@ -175,7 +161,7 @@
             transform: scale(1.02);
         }
 
-        /* --- HEADER --- */
+        /* HEADER */
         header {
             width: 100%;
             height: 80px;
@@ -217,7 +203,6 @@
             border: 1px solid #333;
             border-radius: 4px;
             color: #888;
-            letter-spacing: 1px;
             display: flex;
             align-items: center;
             gap: 10px;
@@ -260,7 +245,7 @@
             color: #000;
         }
 
-        /* --- CANCHA --- */
+        /* PITCH */
         #main-layout {
             display: none;
             align-items: flex-start;
@@ -281,10 +266,7 @@
             width: 950px;
             height: 850px;
             background-color: #1a3c22;
-            background-image:
-                linear-gradient(rgba(0, 0, 0, 0.15) 2px, transparent 2px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                radial-gradient(circle at center, transparent 0%, rgba(0, 0, 0, 0.6) 100%);
+            background-image: linear-gradient(rgba(0, 0, 0, 0.15) 2px, transparent 2px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px), radial-gradient(circle at center, transparent 0%, rgba(0, 0, 0, 0.6) 100%);
             background-size: 100% 85px, 85px 100%, 100% 100%;
             border: 5px solid #ccc;
             box-shadow: 0 10px 60px rgba(0, 0, 0, 0.8);
@@ -376,7 +358,7 @@
             z-index: 10;
         }
 
-        /* --- CARTAS (SLOTS) --- */
+        /* SLOTS */
         .slot {
             width: 130px;
             height: 185px;
@@ -426,7 +408,6 @@
             animation: none;
         }
 
-        /* TIERS */
         .slot.filled.s-if {
             background: var(--c-if-bg);
             border-color: var(--c-if-border);
@@ -508,7 +489,6 @@
             transition: transform 0.3s ease;
         }
 
-        /* ZOOM UNIFICADO */
         .slot.filled:hover .mini-img {
             transform: scale(1.08);
         }
@@ -563,7 +543,7 @@
             font-family: 'Orbitron';
         }
 
-        /* --- SIDEBAR --- */
+        /* SIDEBAR */
         #sidebar-wrapper {
             display: flex;
             gap: 30px;
@@ -610,7 +590,7 @@
             margin-bottom: 25px;
         }
 
-        /* --- RESERVAS --- */
+        /* RESERVES */
         #reserves-section {
             width: 950px;
             background: #151515;
@@ -661,7 +641,6 @@
             flex-shrink: 0;
         }
 
-        /* Hereda estilos reducidos */
         .reserve-slot.s-if {
             border: 1px solid var(--c-if-border);
             background: #111;
@@ -735,7 +714,7 @@
             text-align: center;
         }
 
-        /* --- MODAL --- */
+        /* MODAL */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -823,7 +802,6 @@
             }
         }
 
-        /* ANIMACIÓN CORREGIDA: ZOOM COMPLETO AL CONTENEDOR */
         .choice-card:hover {
             transform: scale(1.1) skewX(-2deg);
             z-index: 100;
@@ -1084,6 +1062,7 @@
             "5-4-1": [["FW"], ["MF", "MF", "MF", "MF"], ["DF", "DF", "DF", "DF", "DF"], ["GK"]]
         };
 
+        // RUTAS EXACTAS
         const baseSeasons = ['IE1', 'IE2', 'IE3', 'IEGO', 'GOCS', 'GOGX', 'ARES', 'ORION', 'VICTORY ROAD'];
         const allPaths = [];
         baseSeasons.forEach(season => {
@@ -1091,25 +1070,36 @@
             allPaths.push(`img/${season}/scouts/`);
         });
 
+        // BUSCADOR EN CASCADA
         window.tryLoadImage = function (img, id, safeName) {
             let currentTry = parseInt(img.getAttribute('data-try') || 0);
+
+            // Si es el primer intento, construimos el ID con padding
+            // ID = 1 -> "0001"
+            let paddedId = String(id).padStart(4, '0');
+
             currentTry++;
 
             if (currentTry < allPaths.length) {
                 img.setAttribute('data-try', currentTry);
-                img.src = `${allPaths[currentTry]}${id}_${safeName}.png`;
+                img.src = `${allPaths[currentTry]}${paddedId}_${safeName}.png`;
             } else {
+                console.warn(`Imagen no encontrada: ${paddedId}_${safeName}.png`);
                 img.onerror = null;
                 img.style.opacity = '0.3';
             }
         };
 
+        // LIMPIEZA DE NOMBRE ESTRICTA (0001_MarkEvans.png)
         function getSafeName(name) {
-            let str = name.toLowerCase();
-            const map = { 'ă': 'a', 'â': 'a', 'î': 'i', 'ș': 's', 'ț': 't', 'ñ': 'n', 'ß': 's', 'ö': 'o', 'ä': 'a', 'ü': 'u' };
-            for (let char in map) str = str.replace(new RegExp(char, 'g'), map[char]);
-            str = str.replace(/[áéíóú]/g, '');
-            return str.replace(/[^a-z0-9]/g, '');
+            // 1. Quitar paréntesis si los hay (ej: "Mark Evans (Raimon)") -> "Mark Evans"
+            let str = name.split('(')[0].trim();
+
+            // 2. Mantener SOLO letras y números. NO bajar a minúsculas.
+            // Elimina espacios, tildes y símbolos.
+            // "Bête Noire" -> "BteNoire"
+            // "Mark Evans" -> "MarkEvans"
+            return str.replace(/[^a-zA-Z0-9]/g, '');
         }
 
         function getBaseName(name) {
@@ -1291,14 +1281,12 @@
             }
 
             let pool = [];
-            // FILTER BY ROLE AND POSITION STRICTLY
             if (role === 'Player') {
                 pool = (strict && posCode !== 'Player') ? database.filter(p => p.role === 'Player' && p.perfil.posicion === posCode) : database.filter(p => p.role === 'Player');
             } else {
                 pool = database.filter(p => p.role === role);
             }
 
-            // EXTRA SAFETY
             if (role === 'Manager') pool = pool.filter(p => p.role === 'Manager');
             if (role === 'Coordinator') pool = pool.filter(p => p.role === 'Coordinator');
             if (role === 'Player') pool = pool.filter(p => p.role === 'Player');
@@ -1321,18 +1309,16 @@
                 return null;
             }
 
-            // LOGICA GOD PACK REVISADA (Strictly Gold Shiny+)
+            // LOGICA GOD PACK: 10% IF, 90% Gold Shiny (Solo falla si no hay shiny)
             if (isSpecial) {
                 const poolIF = pool.filter(p => calcTotal(p) >= limitIF);
                 const poolGoldS = pool.filter(p => calcTotal(p) < limitIF && calcTotal(p) >= limitGoldShiny);
-                const poolGold = pool.filter(p => calcTotal(p) < limitGoldShiny && calcTotal(p) >= limitGold); // Solo por si acaso
+                const poolGold = pool.filter(p => calcTotal(p) < limitGoldShiny && calcTotal(p) >= limitGold);
 
                 for (let i = 0; i < 5; i++) {
                     let rand = Math.random() * 100;
                     let chosenPool = [];
 
-                    // GOD PACK RATES: 10% IF, 90% Gold Shiny
-                    // Solo si no hay Shinys, pilla normales
                     if (rand < 10 && poolIF.length > 0) chosenPool = poolIF;
                     else if (poolGoldS.length > 0) chosenPool = poolGoldS;
                     else chosenPool = poolGold.length > 0 ? poolGold : poolIF;
@@ -1340,8 +1326,7 @@
                     let p = pickUnique(chosenPool);
                     if (!p) p = pickUnique(poolGoldS);
                     if (!p) p = pickUnique(poolIF);
-
-                    if (!p) p = pickUnique(poolGold); // Fallback
+                    if (!p) p = pickUnique(poolGold); // Solo si no queda otra
 
                     if (p) picks.push(p);
                 }
@@ -1358,7 +1343,7 @@
                     let rand = Math.random() * 100;
                     let tierPool = [];
 
-                    // NORMAL RATES: 0.5% IF, 5% GoldS, 20% Gold, 50% SilvS
+                    // 0.5% IF, 5% GoldS, 25% Gold, 50% SilvS
                     if (rand < 0.5 && t1.length > 0) tierPool = t1;
                     else if (rand < 5.5 && t2.length > 0) tierPool = t2;
                     else if (rand < 25.5 && t3.length > 0) tierPool = t3;
@@ -1405,8 +1390,9 @@
                 const elemEs = translations.elem[rawElem] || rawElem;
                 const safeName = getSafeName(p.nombre);
 
-                // USE FIRST PATH INITIALLY
-                const imgSrc = `${allPaths[0]}${p.id}_${safeName}.png`;
+                // IMG CONSTRUCTION (Padded ID + SafeName)
+                const paddedId = String(p.id).padStart(4, '0');
+                const imgSrc = `${allPaths[0]}${paddedId}_${safeName}.png`;
 
                 let statsHtml = "";
                 if (p.stats) {
@@ -1445,7 +1431,10 @@
             slot.classList.add(rareClass);
 
             const pos = p.perfil ? p.perfil.posicion : (p.role === 'Manager' ? 'ENT' : 'GER');
-            const imgSrc = `${allPaths[0]}${p.id}_${safeName}.png`;
+
+            // IMG CONSTRUCTION (Padded ID + SafeName)
+            const paddedId = String(p.id).padStart(4, '0');
+            const imgSrc = `${allPaths[0]}${paddedId}_${safeName}.png`;
 
             slot.innerHTML = `
                 <div class="mini-player">
@@ -1495,7 +1484,9 @@
                     div.className = `reserve-slot ${rareClass}`;
 
                     const safeName = getSafeName(pick.nombre);
-                    const imgSrc = `${allPaths[0]}${pick.id}_${safeName}.png`;
+                    const paddedId = String(pick.id).padStart(4, '0');
+                    const imgSrc = `${allPaths[0]}${paddedId}_${safeName}.png`;
+
                     div.innerHTML = `
                         <div class="reserve-pos">${posCode}</div>
                         <img src="${imgSrc}" class="reserve-img" 
