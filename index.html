@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Inazuma Draft Ultimate - Final Link</title>
+    <title>Inazuma Draft - Speed & Fix</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="data.js" onerror="console.log('Modo manual activo')"></script>
 
@@ -30,9 +30,6 @@
             --c-silver-s-bg: linear-gradient(135deg, #555, #888);
             --c-silver-border: #444;
             --c-silver-bg: #1c1c1c;
-            --stat-low: #e74c3c;
-            --stat-mid: #f39c12;
-            --stat-high: #2ecc71;
         }
 
         * {
@@ -54,7 +51,7 @@
             padding-bottom: 120px;
         }
 
-        /* UI CONFIG */
+        /* CONFIG & UI */
         #config-overlay {
             position: fixed;
             top: 0;
@@ -153,7 +150,7 @@
             cursor: pointer;
             text-transform: uppercase;
             letter-spacing: 2px;
-            transition: 0.2s;
+            transition: all 0.2s ease;
         }
 
         .btn-start:hover {
@@ -477,6 +474,7 @@
             overflow: hidden;
         }
 
+        /* ZOOM ANIMATION FIXED */
         .mini-img {
             width: 120%;
             height: 90%;
@@ -802,6 +800,7 @@
             }
         }
 
+        /* HOVER ZOOM GLOBAL DE LA CARTA */
         .choice-card:hover {
             transform: scale(1.1) skewX(-2deg);
             z-index: 100;
@@ -1048,6 +1047,9 @@
         let specialSlotIndices = new Set();
         let currentSlotIndex = 0;
 
+        // Cache para las rutas encontradas (Optimización)
+        const pathCache = new Map();
+
         const translations = {
             pos: { "GK": "Portero", "DF": "Defensa", "MF": "Medio", "FW": "Delantero", "Player": "Jugador", "Manager": "Entrenador", "Coordinator": "Gerente" },
             elem: { "Fire": "Fuego", "Wind": "Aire", "Mountain": "Montaña", "Earth": "Montaña", "Wood": "Bosque", "Void": "Neutro", "Null": "Neutro" }
@@ -1064,37 +1066,72 @@
 
         // --- SISTEMA DE RUTAS TRIPLE CHECK (RAIZ + SCOUTS + SCOUTS MAYUS) ---
         const baseSeasons = ['IE1', 'IE2', 'IE3', 'IEGO', 'GOCS', 'GOGX', 'ARES', 'ORION', 'VICTORY ROAD'];
-        const allPaths = [];
-        baseSeasons.forEach(season => {
-            allPaths.push(`img/${season}/`);
-            allPaths.push(`img/${season}/scouts/`); // minúscula
-            allPaths.push(`img/${season}/Scouts/`); // Mayúscula
-        });
 
-        window.tryLoadImage = function (img, id, safeName) {
-            let currentTry = parseInt(img.getAttribute('data-try') || 0);
+        function getImageCandidates(id, safeName) {
+            const paddedId = String(id).padStart(4, '0');
+            const fileName = `${paddedId}_${safeName}.png`;
+            const candidates = [];
 
-            // Si es el primer intento, construimos el ID con padding
-            let paddedId = String(id).padStart(4, '0');
+            baseSeasons.forEach(season => {
+                candidates.push(`img/${season}/${fileName}`);
+                candidates.push(`img/${season}/scouts/${fileName}`);
+                candidates.push(`img/${season}/Scouts/${fileName}`);
+            });
+            return candidates;
+        }
 
-            currentTry++;
-
-            if (currentTry < allPaths.length) {
-                img.setAttribute('data-try', currentTry);
-                img.src = `${allPaths[currentTry]}${paddedId}_${safeName}.png`;
-            } else {
-                console.warn(`Imagen no encontrada: ${paddedId}_${safeName}.png`);
-                img.onerror = null;
-                img.style.opacity = '0.3';
+        // CARGA PARALELA (INSTANTANEA)
+        function findAndLoadImage(imgElement, id, safeName) {
+            if (pathCache.has(id)) {
+                imgElement.src = pathCache.get(id);
+                return;
             }
-        };
+
+            const candidates = getImageCandidates(id, safeName);
+            let loaded = false;
+
+            candidates.forEach(src => {
+                const img = new Image();
+                img.onload = () => {
+                    if (!loaded) {
+                        loaded = true;
+                        pathCache.set(id, src); // Guardar en cache
+                        imgElement.src = src;
+                    }
+                };
+                img.src = src;
+            });
+
+            // Fallback si nada carga en 2 segundos
+            setTimeout(() => {
+                if (!loaded && !imgElement.src) {
+                    console.error(`❌ No encontrada: ${String(id).padStart(4, '0')}_${safeName}.png (Buscada en ${candidates.length} carpetas)`);
+                    imgElement.style.opacity = '0.3';
+                }
+            }, 2000);
+        }
 
         function getSafeName(name) {
             let str = name.toLowerCase();
             const map = { 'ă': 'a', 'â': 'a', 'î': 'i', 'ș': 's', 'ț': 't', 'ñ': 'n', 'ß': 's', 'ö': 'o', 'ä': 'a', 'ü': 'u' };
             for (let char in map) str = str.replace(new RegExp(char, 'g'), map[char]);
             str = str.replace(/[áéíóú]/g, '');
-            return str.replace(/[^a-z0-9]/g, '');
+            return str.replace(/[^a-z0-9]/g, ''); // Eliminamos la opcion de mayusculas aqui porque los archivos en github suelen ser lower en id
+            // CORRECCION FINAL: El usuario dijo 0001_MarkEvans.png. Case Sensitive!
+            // Vamos a restaurar la logica Case Sensitive.
+        }
+
+        // Sobreescribimos getSafeName para que respete Mayúsculas como MarkEvans
+        function getSafeName(name) {
+            // 1. Quitar paréntesis
+            let str = name.split('(')[0].trim();
+            // 2. Mapeo de caracteres especiales
+            const map = { 'ă': 'a', 'â': 'a', 'î': 'i', 'ș': 's', 'ț': 't', 'ñ': 'n', 'ß': 's', 'ö': 'o', 'ä': 'a', 'ü': 'u' };
+            for (let char in map) str = str.replace(new RegExp(char, 'g'), map[char]);
+            // 3. Eliminar tildes
+            str = str.replace(/[áéíóúÁÉÍÓÚ]/g, '');
+            // 4. Mantener CamelCase (Solo letras y numeros)
+            return str.replace(/[^a-zA-Z0-9]/g, '');
         }
 
         function getBaseName(name) {
@@ -1283,7 +1320,6 @@
                 pool = database.filter(p => p.role === role);
             }
 
-            // EXTRA SAFETY
             if (role === 'Manager') pool = pool.filter(p => p.role === 'Manager');
             if (role === 'Coordinator') pool = pool.filter(p => p.role === 'Coordinator');
             if (role === 'Player') pool = pool.filter(p => p.role === 'Player');
@@ -1306,24 +1342,34 @@
                 return null;
             }
 
-            // LOGICA GOD PACK: 10% IF, 90% Gold Shiny (Solo falla si no hay shiny)
+            // LOGICA GOD PACK: 10% IF, 90% Gold Shiny (Strict Mode)
             if (isSpecial) {
                 const poolIF = pool.filter(p => calcTotal(p) >= limitIF);
+                // Pool Gold Shiny es EXCLUSIVA para el God Pack (Shiny o superior)
                 const poolGoldS = pool.filter(p => calcTotal(p) < limitIF && calcTotal(p) >= limitGoldShiny);
-                const poolGold = pool.filter(p => calcTotal(p) < limitGoldShiny && calcTotal(p) >= limitGold);
+
+                // Si la pool está vacía, debemos rellenar con lo que haya para no crashear
+                const hasShinys = poolGoldS.length > 0;
 
                 for (let i = 0; i < 5; i++) {
                     let rand = Math.random() * 100;
                     let chosenPool = [];
 
-                    if (rand < 10 && poolIF.length > 0) chosenPool = poolIF;
-                    else if (poolGoldS.length > 0) chosenPool = poolGoldS;
-                    else chosenPool = poolGold.length > 0 ? poolGold : poolIF;
+                    // SI hay shinys, SOLO salen Shinys o IF
+                    if (hasShinys) {
+                        if (rand < 10 && poolIF.length > 0) chosenPool = poolIF;
+                        else chosenPool = poolGoldS;
+                    } else {
+                        // Si NO hay shinys, pilla lo mejor disponible (Gold normal)
+                        const poolGold = pool.filter(p => calcTotal(p) < limitGoldShiny && calcTotal(p) >= limitGold);
+                        chosenPool = poolGold.length > 0 ? poolGold : pool;
+                    }
 
                     let p = pickUnique(chosenPool);
-                    if (!p) p = pickUnique(poolGoldS);
+                    // Fallbacks seguros
+                    if (!p && hasShinys) p = pickUnique(poolGoldS);
                     if (!p) p = pickUnique(poolIF);
-                    if (!p) p = pickUnique(poolGold); // Solo si no queda otra
+                    if (!p) p = pickUnique(pool);
 
                     if (p) picks.push(p);
                 }
@@ -1387,10 +1433,6 @@
                 const elemEs = translations.elem[rawElem] || rawElem;
                 const safeName = getSafeName(p.nombre);
 
-                // IMG CONSTRUCTION (Padded ID + SafeName)
-                const paddedId = String(p.id).padStart(4, '0');
-                const imgSrc = `${allPaths[0]}${paddedId}_${safeName}.png`;
-
                 let statsHtml = "";
                 if (p.stats) {
                     statsHtml = `<div class="stats-grid">`;
@@ -1404,9 +1446,9 @@
                 card.innerHTML = `
                     <div class="choice-score ${rareClass}">${total}</div>
                     <div class="choice-img-box">
-                        <img src="${imgSrc}" class="choice-img" 
-                             data-try="0" 
-                             onerror="tryLoadImage(this, '${p.id}', '${safeName}')">
+                        <img src="" class="choice-img" 
+                             onload="" 
+                             onerror="findAndLoadImage(this, '${p.id}', '${safeName}')">
                     </div>
                     <div class="choice-info">
                         <div class="choice-name">${p.nombre}</div>
@@ -1414,6 +1456,11 @@
                         ${statsHtml}
                     </div>
                 `;
+
+                // Disparar carga de imagen inmediatamente
+                const img = card.querySelector('img');
+                findAndLoadImage(img, p.id, safeName);
+
                 card.onclick = () => fillSlot(p, total, safeName, elemEs, rareClass);
                 container.appendChild(card);
             });
@@ -1429,22 +1476,20 @@
 
             const pos = p.perfil ? p.perfil.posicion : (p.role === 'Manager' ? 'ENT' : 'GER');
 
-            // IMG CONSTRUCTION (Padded ID + SafeName)
-            const paddedId = String(p.id).padStart(4, '0');
-            const imgSrc = `${allPaths[0]}${paddedId}_${safeName}.png`;
-
             slot.innerHTML = `
                 <div class="mini-player">
                     <div class="mini-badge el-${elemEs}">${pos}</div>
-                    <img src="${imgSrc}" class="mini-img" 
-                         data-try="0" 
-                         onerror="tryLoadImage(this, '${p.id}', '${safeName}')">
+                    <img src="" class="mini-img">
                     <div class="mini-info">
                         <div class="mini-name">${p.nombre}</div>
                         <div class="mini-total">TOT: ${total}</div>
                     </div>
                 </div>
             `;
+
+            const img = slot.querySelector('img');
+            findAndLoadImage(img, p.id, safeName);
+
             teamTotal += total; updateStats(); closeModal();
 
             const filledCount = document.querySelectorAll('.slot.filled').length;
@@ -1481,16 +1526,16 @@
                     div.className = `reserve-slot ${rareClass}`;
 
                     const safeName = getSafeName(pick.nombre);
-                    const paddedId = String(pick.id).padStart(4, '0');
-                    const imgSrc = `${allPaths[0]}${paddedId}_${safeName}.png`;
 
                     div.innerHTML = `
                         <div class="reserve-pos">${posCode}</div>
-                        <img src="${imgSrc}" class="reserve-img" 
-                             data-try="0" 
-                             onerror="tryLoadImage(this, '${pick.id}', '${safeName}')">
+                        <img src="" class="reserve-img">
                         <div class="reserve-name-box"><div class="reserve-name">${pick.nombre}</div></div>
                     `;
+
+                    const img = div.querySelector('img');
+                    findAndLoadImage(img, pick.id, safeName);
+
                     container.appendChild(div);
                 }
             });
