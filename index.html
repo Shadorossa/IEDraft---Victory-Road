@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Inazuma Draft - Pack Opener</title>
+    <title>Inazuma Draft - Instant Flow</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="data.js" onerror="console.log('Modo manual activo')"></script>
 
@@ -30,6 +30,9 @@
             --c-silver-s-bg: linear-gradient(135deg, #555, #888);
             --c-silver-border: #444;
             --c-silver-bg: #1c1c1c;
+            --stat-low: #e74c3c;
+            --stat-mid: #f39c12;
+            --stat-high: #2ecc71;
         }
 
         * {
@@ -474,6 +477,7 @@
             overflow: hidden;
         }
 
+        /* IMAGEN ANIMADA FADE IN */
         .mini-img {
             width: 120%;
             height: 90%;
@@ -484,6 +488,12 @@
             left: -10%;
             filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.6));
             transition: transform 0.3s ease;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        .mini-img.loaded {
+            opacity: 1;
         }
 
         .slot.filled:hover .mini-img {
@@ -684,7 +694,7 @@
             bottom: 20%;
             filter: grayscale(0.5);
             opacity: 0;
-            transition: opacity 0.3s;
+            transition: opacity 0.5s;
         }
 
         .reserve-img.loaded {
@@ -776,61 +786,6 @@
             min-height: 400px;
         }
 
-        /* --- PACK LOADER OVERLAY --- */
-        #pack-loader {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(10, 10, 10, 0.98);
-            z-index: 200;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            gap: 20px;
-            transition: opacity 0.3s;
-        }
-
-        .loader-spinner {
-            width: 60px;
-            height: 60px;
-            border: 6px solid #333;
-            border-top: 6px solid var(--accent-gold);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        .loader-text {
-            font-family: 'Orbitron';
-            font-size: 1.5rem;
-            color: #fff;
-            letter-spacing: 3px;
-            font-weight: bold;
-            animation: pulse 1s infinite alternate;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        @keyframes pulse {
-            from {
-                opacity: 0.6;
-            }
-
-            to {
-                opacity: 1;
-            }
-        }
-
         .choice-card {
             background: #252525;
             border: 2px solid #444;
@@ -845,7 +800,7 @@
             height: 340px;
             flex-shrink: 0;
             opacity: 0;
-            /* OCULTO HASTA QUE CARGA */
+            /* EMPIEZA OCULTO */
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
             transform: skewX(-2deg);
         }
@@ -909,11 +864,20 @@
             position: relative;
         }
 
+        /* LA IMAGEN EMPIEZA INVISIBLE PARA NO VER EL ICONO ROTO */
         .choice-img {
             height: 95%;
             filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.8));
             z-index: 2;
+            opacity: 0;
+            transition: opacity 0.5s;
         }
+
+        .choice-img.loaded {
+            opacity: 1;
+        }
+
+        /* SE MUESTRA AL CARGAR */
 
         .choice-info {
             padding: 15px;
@@ -1090,10 +1054,6 @@
 
     <div class="modal-overlay" id="draftModal">
         <div class="modal-content" id="modalBox">
-            <div id="pack-loader">
-                <div class="loader-spinner"></div>
-                <div class="loader-text">ABRIENDO SOBRE...</div>
-            </div>
             <div class="modal-header">
                 <h2 id="modalTitle"></h2>
             </div>
@@ -1116,7 +1076,7 @@
         let specialSlotIndices = new Set();
         let currentSlotIndex = 0;
 
-        // ALMACEN DEL PRE-CALCULO (Solo Data, sin Imagenes)
+        // ALMACEN DEL PRE-CALCULO
         const draftCache = {};
         const pathCache = new Map();
 
@@ -1136,9 +1096,8 @@
 
         const baseSeasons = ['IE1', 'IE2', 'IE3', 'IEGO', 'GOCS', 'GOGX', 'ARES', 'ORION', 'VICTORY ROAD'];
 
-        // --- SISTEMA PRE-LOADER (BAJO DEMANDA) ---
-
-        // 1. Encontrar ruta válida (Parallel Search)
+        // --- SISTEMA PRE-LOADER INTELIGENTE ---
+        // Encuentra la ruta valida ANTES de mostrar la carta
         function findValidPath(id, name) {
             return new Promise((resolve) => {
                 if (pathCache.has(id)) {
@@ -1146,14 +1105,12 @@
                     return;
                 }
 
-                // LIMPIEZA NOMBRE (Strict Match con tu repo)
                 const nameClean = name.split('(')[0].trim().replace(/[^a-zA-Z0-9]/g, '');
                 const id4 = String(id).padStart(4, '0');
                 const fileName = `${id4}_${nameClean}.png`;
 
                 let candidates = [];
                 baseSeasons.forEach(season => {
-                    // Orden de prioridad
                     candidates.push(`img/${season}/Scouts/${fileName}`);
                     candidates.push(`img/${season}/${fileName}`);
                 });
@@ -1172,14 +1129,14 @@
                     };
                     img.onerror = () => {
                         pending--;
-                        if (pending === 0 && !solved) resolve(null);
+                        if (pending === 0 && !solved) resolve(null); // No encontrada
                     };
                     img.src = src; // Inicia la descarga
                 });
             });
         }
 
-        // --- SOLO PARA EL CAMPO (Carga normal de 1 en 1) ---
+        // --- SOLO PARA EL CAMPO (Carga normal) ---
         window.loadKnownImage = function (img, id, name) {
             findValidPath(id, name).then(src => {
                 if (src) {
@@ -1191,8 +1148,7 @@
             });
         };
 
-        // 2. Generar 5 candidatos para un slot (SOLO DATOS, NO IMAGENES)
-        // Esto es instantáneo porque son simples matemáticas
+        // 2. Generar 5 candidatos para un slot (SOLO DATOS, RAPIDO)
         function preGenerateForSlot(slotIndex, pos, role, isSpecial) {
             let pool = [];
 
@@ -1246,7 +1202,7 @@
             draftCache[slotIndex] = picks;
         }
 
-        // 3. Ejecutar pre-calculo MASIVO (SIN IMAGENES)
+        // 3. Ejecutar pre-calculo ( SIN IMAGENES )
         function preGenerateEntireDraft() {
             let slotIndex = 0;
             const layout = formations[currentFormation];
@@ -1421,7 +1377,7 @@
             coordinatorsRow.innerHTML = "";
             for (let i = 0; i < 3; i++) createSlot(coordinatorsRow, "Coordinator", "Coordinator", true, true);
 
-            // CALCULO MASIVO INSTANTANEO
+            // CALCULO MASIVO DE DATOS (INSTANTANEO)
             preGenerateEntireDraft();
         }
 
@@ -1450,22 +1406,15 @@
 
         let activeSlot = null;
 
-        // --- LA MAGIA: CARGAR IMAGENES SOLO AL ABRIR EL SOBRE ---
-        async function openModal(slot, posCode, isSpecial, slotIndex) {
+        function openModal(slot, posCode, isSpecial, slotIndex) {
             activeSlot = slot;
             const modal = document.getElementById('draftModal');
             const modalBox = document.getElementById('modalBox');
             const container = document.getElementById('modalOptions');
             const title = document.getElementById('modalTitle');
-            const loader = document.getElementById('pack-loader');
 
             modal.style.display = 'flex';
             container.innerHTML = '';
-
-            // MOSTRAR SPINNER
-            loader.style.display = 'flex';
-            loader.style.opacity = '1';
-
             title.innerText = (translations.pos[posCode] || posCode);
 
             if (isSpecial) modalBox.classList.add('god-pack');
@@ -1475,21 +1424,13 @@
             const picks = draftCache[slotIndex];
 
             if (!picks || picks.length === 0) {
+                // Fallback por si acaso
                 container.innerHTML = `<p style="color:#fff">Generando opciones...</p>`;
                 setTimeout(() => openModal(slot, posCode, isSpecial, slotIndex), 500);
                 return;
             }
 
-            // BUSCAR LAS 5 IMAGENES AHORA (SOLO ESTAS 5)
-            const promises = picks.map(p => findValidPath(p.id, p.nombre).then(src => ({ ...p, imgSrc: src })));
-            const readyPlayers = await Promise.all(promises);
-
-            // PINTAR
-            renderPicks(readyPlayers, container);
-
-            // OCULTAR SPINNER
-            loader.style.opacity = '0';
-            setTimeout(() => { loader.style.display = 'none'; }, 300);
+            renderPicks(picks, container);
         }
 
         function renderPicks(players, container) {
@@ -1498,7 +1439,7 @@
                 const rareClass = getTotalColorClass(total);
 
                 const card = document.createElement('div');
-                card.className = `choice-card ${rareClass} revealed`; // Clase revealed para animacion
+                card.className = `choice-card ${rareClass} revealed`; // Clase de animación
                 card.style.animationDelay = `${index * 0.1}s`;
 
                 const rawElem = p.perfil ? p.perfil.elemento : "Void";
@@ -1518,7 +1459,7 @@
                 card.innerHTML = `
                     <div class="choice-score ${rareClass}">${total}</div>
                     <div class="choice-img-box">
-                        <img src="${p.imgSrc || ''}" class="choice-img loaded">
+                        <img src="" class="choice-img">
                     </div>
                     <div class="choice-info">
                         <div class="choice-name">${p.nombre}</div>
@@ -1526,6 +1467,11 @@
                         ${statsHtml}
                     </div>
                 `;
+
+                // --- INICIO DE CARGA EN SEGUNDO PLANO ---
+                // Se busca la imagen AHORA, mientras ocurre la animación de entrada
+                const img = card.querySelector('img');
+                loadKnownImage(img, p.id, p.nombre);
 
                 card.onclick = () => fillSlot(p, total, elemEs, rareClass, p.imgSrc);
                 container.appendChild(card);
@@ -1545,13 +1491,18 @@
             slot.innerHTML = `
                 <div class="mini-player">
                     <div class="mini-badge el-${elemEs}">${pos}</div>
-                    <img src="${imgSrc || ''}" class="mini-img loaded">
+                    <img src="${imgSrc || ''}" class="mini-img">
                     <div class="mini-info">
                         <div class="mini-name">${p.nombre}</div>
                         <div class="mini-total">TOT: ${total}</div>
                     </div>
                 </div>
             `;
+
+            const img = slot.querySelector('img');
+            // Si por alguna razón no estaba cacheada, se busca de nuevo
+            if (!img.src) loadKnownImage(img, p.id, p.nombre);
+            else img.classList.add('loaded');
 
             teamTotal += total; updateStats(); closeModal();
 
