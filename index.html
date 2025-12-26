@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Inazuma Draft - Speed & Fix</title>
+    <title>Inazuma Draft - Fixed Repository</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="data.js" onerror="console.log('Modo manual activo')"></script>
 
@@ -51,7 +51,7 @@
             padding-bottom: 120px;
         }
 
-        /* CONFIG & UI */
+        /* UI */
         #config-overlay {
             position: fixed;
             top: 0;
@@ -150,7 +150,7 @@
             cursor: pointer;
             text-transform: uppercase;
             letter-spacing: 2px;
-            transition: all 0.2s ease;
+            transition: 0.2s;
         }
 
         .btn-start:hover {
@@ -158,7 +158,6 @@
             transform: scale(1.02);
         }
 
-        /* HEADER */
         header {
             width: 100%;
             height: 80px;
@@ -474,7 +473,7 @@
             overflow: hidden;
         }
 
-        /* ZOOM ANIMATION FIXED */
+        /* ZOOM UNIFICADO */
         .mini-img {
             width: 120%;
             height: 90%;
@@ -800,7 +799,7 @@
             }
         }
 
-        /* HOVER ZOOM GLOBAL DE LA CARTA */
+        /* ZOOM AL CONTENEDOR */
         .choice-card:hover {
             transform: scale(1.1) skewX(-2deg);
             z-index: 100;
@@ -1047,9 +1046,6 @@
         let specialSlotIndices = new Set();
         let currentSlotIndex = 0;
 
-        // Cache para las rutas encontradas (Optimización)
-        const pathCache = new Map();
-
         const translations = {
             pos: { "GK": "Portero", "DF": "Defensa", "MF": "Medio", "FW": "Delantero", "Player": "Jugador", "Manager": "Entrenador", "Coordinator": "Gerente" },
             elem: { "Fire": "Fuego", "Wind": "Aire", "Mountain": "Montaña", "Earth": "Montaña", "Wood": "Bosque", "Void": "Neutro", "Null": "Neutro" }
@@ -1064,73 +1060,52 @@
             "5-4-1": [["FW"], ["MF", "MF", "MF", "MF"], ["DF", "DF", "DF", "DF", "DF"], ["GK"]]
         };
 
-        // --- SISTEMA DE RUTAS TRIPLE CHECK (RAIZ + SCOUTS + SCOUTS MAYUS) ---
-        const baseSeasons = ['IE1', 'IE2', 'IE3', 'IEGO', 'GOCS', 'GOGX', 'ARES', 'ORION', 'VICTORY ROAD'];
+        // --- GENERADOR DE RUTAS (Fuerza Bruta Inteligente) ---
+        const seasons = ['IE1', 'IE2', 'IE3', 'IEGO', 'GOCS', 'GOGX', 'ARES', 'ORION', 'VICTORY ROAD'];
 
-        function getImageCandidates(id, safeName) {
+        // Función que genera TODAS las rutas posibles para una imagen
+        function generateCandidatePaths(id, cleanName) {
             const paddedId = String(id).padStart(4, '0');
-            const fileName = `${paddedId}_${safeName}.png`;
-            const candidates = [];
+            const fileName = `${paddedId}_${cleanName}.png`;
+            let paths = [];
 
-            baseSeasons.forEach(season => {
-                candidates.push(`img/${season}/${fileName}`);
-                candidates.push(`img/${season}/scouts/${fileName}`);
-                candidates.push(`img/${season}/Scouts/${fileName}`);
+            seasons.forEach(season => {
+                // 1. Prioridad: Carpeta Scouts (Mayúscula) como en tu repo
+                paths.push(`img/${season}/Scouts/${fileName}`);
+                // 2. Fallback: Carpeta Raíz
+                paths.push(`img/${season}/${fileName}`);
             });
-            return candidates;
+            return paths;
         }
 
-        // CARGA PARALELA (INSTANTANEA)
-        function findAndLoadImage(imgElement, id, safeName) {
-            if (pathCache.has(id)) {
-                imgElement.src = pathCache.get(id);
+        // CARGADOR RECURSIVO (Prueba rutas hasta encontrar la buena)
+        window.loadNextImage = function (img, paths, index) {
+            if (index >= paths.length) {
+                // Si falla todo, se rinde y muestra placeholder
+                img.onerror = null;
+                img.style.opacity = '0.3';
                 return;
             }
 
-            const candidates = getImageCandidates(id, safeName);
-            let loaded = false;
+            img.onerror = function () {
+                loadNextImage(img, paths, index + 1);
+            };
+            img.src = paths[index];
+        };
 
-            candidates.forEach(src => {
-                const img = new Image();
-                img.onload = () => {
-                    if (!loaded) {
-                        loaded = true;
-                        pathCache.set(id, src); // Guardar en cache
-                        imgElement.src = src;
-                    }
-                };
-                img.src = src;
-            });
-
-            // Fallback si nada carga en 2 segundos
-            setTimeout(() => {
-                if (!loaded && !imgElement.src) {
-                    console.error(`❌ No encontrada: ${String(id).padStart(4, '0')}_${safeName}.png (Buscada en ${candidates.length} carpetas)`);
-                    imgElement.style.opacity = '0.3';
-                }
-            }, 2000);
-        }
-
+        // LIMPIEZA DE NOMBRE (Estricta para coincidir con tu formato)
+        // Ejemplo: "Anne Somnia" -> "AnneSomnia"
+        // Ejemplo: "José Costa" -> "JosCosta"
         function getSafeName(name) {
-            let str = name.toLowerCase();
+            let str = name.split('(')[0].trim(); // Quitar (Raimon)
+            // Reemplazar caracteres especiales específicos
             const map = { 'ă': 'a', 'â': 'a', 'î': 'i', 'ș': 's', 'ț': 't', 'ñ': 'n', 'ß': 's', 'ö': 'o', 'ä': 'a', 'ü': 'u' };
             for (let char in map) str = str.replace(new RegExp(char, 'g'), map[char]);
-            str = str.replace(/[áéíóú]/g, '');
-            return str.replace(/[^a-z0-9]/g, ''); // Eliminamos la opcion de mayusculas aqui porque los archivos en github suelen ser lower en id
-            // CORRECCION FINAL: El usuario dijo 0001_MarkEvans.png. Case Sensitive!
-            // Vamos a restaurar la logica Case Sensitive.
-        }
 
-        // Sobreescribimos getSafeName para que respete Mayúsculas como MarkEvans
-        function getSafeName(name) {
-            // 1. Quitar paréntesis
-            let str = name.split('(')[0].trim();
-            // 2. Mapeo de caracteres especiales
-            const map = { 'ă': 'a', 'â': 'a', 'î': 'i', 'ș': 's', 'ț': 't', 'ñ': 'n', 'ß': 's', 'ö': 'o', 'ä': 'a', 'ü': 'u' };
-            for (let char in map) str = str.replace(new RegExp(char, 'g'), map[char]);
-            // 3. Eliminar tildes
+            // Eliminar tildes comunes
             str = str.replace(/[áéíóúÁÉÍÓÚ]/g, '');
-            // 4. Mantener CamelCase (Solo letras y numeros)
+
+            // Eliminar espacios y símbolos (quedarse solo con letras y números)
             return str.replace(/[^a-zA-Z0-9]/g, '');
         }
 
@@ -1313,7 +1288,6 @@
             }
 
             let pool = [];
-            // FILTER BY ROLE AND POSITION STRICTLY
             if (role === 'Player') {
                 pool = (strict && posCode !== 'Player') ? database.filter(p => p.role === 'Player' && p.perfil.posicion === posCode) : database.filter(p => p.role === 'Player');
             } else {
@@ -1342,40 +1316,30 @@
                 return null;
             }
 
-            // LOGICA GOD PACK: 10% IF, 90% Gold Shiny (Strict Mode)
+            // GOD PACK RATES: 10% IF, 90% Gold Shiny (Fallback to Gold Normal if no Shiny)
             if (isSpecial) {
                 const poolIF = pool.filter(p => calcTotal(p) >= limitIF);
-                // Pool Gold Shiny es EXCLUSIVA para el God Pack (Shiny o superior)
                 const poolGoldS = pool.filter(p => calcTotal(p) < limitIF && calcTotal(p) >= limitGoldShiny);
-
-                // Si la pool está vacía, debemos rellenar con lo que haya para no crashear
-                const hasShinys = poolGoldS.length > 0;
+                const poolGold = pool.filter(p => calcTotal(p) < limitGoldShiny && calcTotal(p) >= limitGold);
 
                 for (let i = 0; i < 5; i++) {
                     let rand = Math.random() * 100;
                     let chosenPool = [];
 
-                    // SI hay shinys, SOLO salen Shinys o IF
-                    if (hasShinys) {
-                        if (rand < 10 && poolIF.length > 0) chosenPool = poolIF;
-                        else chosenPool = poolGoldS;
-                    } else {
-                        // Si NO hay shinys, pilla lo mejor disponible (Gold normal)
-                        const poolGold = pool.filter(p => calcTotal(p) < limitGoldShiny && calcTotal(p) >= limitGold);
-                        chosenPool = poolGold.length > 0 ? poolGold : pool;
-                    }
+                    if (rand < 10 && poolIF.length > 0) chosenPool = poolIF;
+                    else if (poolGoldS.length > 0) chosenPool = poolGoldS;
+                    else chosenPool = poolGold.length > 0 ? poolGold : poolIF;
 
                     let p = pickUnique(chosenPool);
-                    // Fallbacks seguros
-                    if (!p && hasShinys) p = pickUnique(poolGoldS);
+                    if (!p) p = pickUnique(poolGoldS);
                     if (!p) p = pickUnique(poolIF);
-                    if (!p) p = pickUnique(pool);
+                    if (!p) p = pickUnique(poolGold);
 
                     if (p) picks.push(p);
                 }
 
             } else {
-                // LOGICA NORMAL
+                // NORMAL RATES
                 const t1 = pool.filter(p => calcTotal(p) >= limitIF);
                 const t2 = pool.filter(p => calcTotal(p) < limitIF && calcTotal(p) >= limitGoldShiny);
                 const t3 = pool.filter(p => calcTotal(p) < limitGoldShiny && calcTotal(p) >= limitGold);
@@ -1386,7 +1350,6 @@
                     let rand = Math.random() * 100;
                     let tierPool = [];
 
-                    // NORMAL RATES: 0.5% IF, 5% GoldS, 25% Gold, 50% SilvS
                     if (rand < 0.5 && t1.length > 0) tierPool = t1;
                     else if (rand < 5.5 && t2.length > 0) tierPool = t2;
                     else if (rand < 25.5 && t3.length > 0) tierPool = t3;
@@ -1431,7 +1394,10 @@
 
                 const rawElem = p.perfil ? p.perfil.elemento : "Void";
                 const elemEs = translations.elem[rawElem] || rawElem;
-                const safeName = getSafeName(p.nombre);
+                const cleanName = getSafeName(p.nombre);
+
+                // Generar rutas candidatas
+                const candidates = generateCandidatePaths(p.id, cleanName);
 
                 let statsHtml = "";
                 if (p.stats) {
@@ -1446,9 +1412,7 @@
                 card.innerHTML = `
                     <div class="choice-score ${rareClass}">${total}</div>
                     <div class="choice-img-box">
-                        <img src="" class="choice-img" 
-                             onload="" 
-                             onerror="findAndLoadImage(this, '${p.id}', '${safeName}')">
+                        <img src="" class="choice-img">
                     </div>
                     <div class="choice-info">
                         <div class="choice-name">${p.nombre}</div>
@@ -1457,16 +1421,16 @@
                     </div>
                 `;
 
-                // Disparar carga de imagen inmediatamente
+                // Iniciar carga de imagen
                 const img = card.querySelector('img');
-                findAndLoadImage(img, p.id, safeName);
+                loadNextImage(img, candidates, 0);
 
-                card.onclick = () => fillSlot(p, total, safeName, elemEs, rareClass);
+                card.onclick = () => fillSlot(p, total, cleanName, elemEs, rareClass);
                 container.appendChild(card);
             });
         }
 
-        function fillSlot(p, total, safeName, elemEs, rareClass) {
+        function fillSlot(p, total, cleanName, elemEs, rareClass) {
             pickedIDs.add(p.id);
             pickedBaseNames.add(getBaseName(p.nombre));
 
@@ -1475,6 +1439,7 @@
             slot.classList.add(rareClass);
 
             const pos = p.perfil ? p.perfil.posicion : (p.role === 'Manager' ? 'ENT' : 'GER');
+            const candidates = generateCandidatePaths(p.id, cleanName);
 
             slot.innerHTML = `
                 <div class="mini-player">
@@ -1488,7 +1453,7 @@
             `;
 
             const img = slot.querySelector('img');
-            findAndLoadImage(img, p.id, safeName);
+            loadNextImage(img, candidates, 0);
 
             teamTotal += total; updateStats(); closeModal();
 
@@ -1525,7 +1490,8 @@
                     const rareClass = getTotalColorClass(total);
                     div.className = `reserve-slot ${rareClass}`;
 
-                    const safeName = getSafeName(pick.nombre);
+                    const cleanName = getSafeName(pick.nombre);
+                    const paths = generateCandidatePaths(pick.id, cleanName);
 
                     div.innerHTML = `
                         <div class="reserve-pos">${posCode}</div>
@@ -1534,7 +1500,7 @@
                     `;
 
                     const img = div.querySelector('img');
-                    findAndLoadImage(img, pick.id, safeName);
+                    loadNextImage(img, paths, 0);
 
                     container.appendChild(div);
                 }
