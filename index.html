@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Inazuma Draft - Configurable</title>
+    <title>Inazuma Draft - Final Visuals</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="data.js" onerror="console.log('Modo manual activo')"></script>
 
@@ -27,7 +27,7 @@
             --c-gold-border: #705b2e;
             --c-gold-bg: #362e1e;
             --c-silver-s-border: #a0a0a0;
-            --c-silver-s-bg: linear-gradient(135deg, #555, #888);
+            --c-silver-s-bg: linear-gradient(135deg, #7f8c8d, #bdc3c7);
             --c-silver-border: #444;
             --c-silver-bg: #1c1c1c;
             --stat-low: #e74c3c;
@@ -358,7 +358,7 @@
             z-index: 10;
         }
 
-        /* SLOTS */
+        /* SLOTS (MINI CARDS) */
         .slot {
             width: 130px;
             height: 185px;
@@ -726,7 +726,7 @@
             text-align: center;
         }
 
-        /* MODAL & PACK ANIMATION */
+        /* MODAL */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -779,15 +779,10 @@
             justify-content: center;
             gap: 30px;
             padding: 60px 30px;
-            overflow-x: auto;
+            overflow-x: hidden;
             align-items: center;
             background: radial-gradient(circle, #252525 0%, #1a1a1a 100%);
             min-height: 400px;
-        }
-
-        /* FIX: Ocultar scrollbar durante animacion */
-        .modal-grid {
-            overflow-x: hidden;
         }
 
         /* --- PACK ANIMATION SOFT --- */
@@ -818,7 +813,6 @@
             overflow: hidden;
             transform-style: preserve-3d;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            /* Animación base rápida */
             animation: shake-fast 0.3s infinite ease-in-out;
         }
 
@@ -857,7 +851,6 @@
             z-index: 2;
         }
 
-        /* ANIMACIÓN DE APERTURA FLASH */
         .pack-visual.opening {
             animation: dramatic-open-flash 0.6s forwards cubic-bezier(0.6, 0.04, 0.98, 0.335);
         }
@@ -898,7 +891,6 @@
             left: 0;
             width: 100%;
             height: 100%;
-            /* GRADIENTE SUAVE EN VEZ DE BLANCO SOLIDO */
             background: radial-gradient(circle, rgba(255, 255, 200, 0.3) 0%, transparent 70%);
             z-index: 300;
             opacity: 0;
@@ -923,13 +915,15 @@
             }
         }
 
+        /* --- ZOOM CARD --- */
         .choice-card {
             background: #252525;
             border: 2px solid #444;
             border-radius: 8px;
             overflow: hidden;
             cursor: pointer;
-            transition: 0.2s;
+            /* Transición suave para el zoom */
+            transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s, border-color 0.3s;
             display: flex;
             flex-direction: column;
             position: relative;
@@ -939,6 +933,15 @@
             opacity: 0;
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
             transform: skewX(-2deg);
+        }
+
+        /* HOVER EFFECT MEJORADO */
+        .choice-card:hover {
+            transform: scale(1.12) skewX(-2deg) translateY(-10px) !important;
+            /* Importante para sobreescribir animacion */
+            z-index: 100;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
+            border-color: #fff;
         }
 
         .choice-card.revealed {
@@ -955,11 +958,6 @@
                 opacity: 0;
                 transform: skewX(-5deg) translateY(50px) scale(0.9);
             }
-        }
-
-        .choice-card:hover {
-            transform: scale(1.05) skewX(-2deg);
-            z-index: 100;
         }
 
         /* ... RESTO DE ESTILOS ... */
@@ -1068,43 +1066,56 @@
             background: #000;
         }
 
+        /* STATS MAS LEGIBLES */
         .stats-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 5px 15px;
             font-size: 0.8rem;
-            color: #aaa;
+            color: #fff;
+            /* Texto blanco siempre */
+            font-weight: 700;
+            /* Negrita */
+            text-shadow: 0 0 3px #000, 1px 1px 2px #000;
+            /* Sombra negra fuerte */
         }
 
+        /* Eliminar override de color para cartas claras, mantener blanco+sombra para contraste universal */
         .choice-card.s-gold-s .stats-grid,
         .choice-card.s-silver-s .stats-grid {
-            color: #333;
+            color: #fff;
+            text-shadow: 0 0 3px #000, 1px 1px 2px #000;
         }
 
         .stat-item {
             display: flex;
             justify-content: space-between;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
         }
 
         .el-Fuego {
             color: #ff5252;
+            text-shadow: 1px 1px 1px #000;
         }
 
-        .el-Aire {
-            color: #00e676;
+        .el-Viento {
+            color: #00b8e6;
+            text-shadow: 1px 1px 1px #000;
         }
 
         .el-Bosque {
-            color: #29b6f6;
+            color: hwb(108 5% 24%);
+            text-shadow: 1px 1px 1px #000;
         }
 
         .el-Montaña {
             color: #ffb300;
+            text-shadow: 1px 1px 1px #000;
         }
 
         .el-Neutro {
             color: #e040fb;
+            text-shadow: 1px 1px 1px #000;
         }
 
         #manual-load {
@@ -1200,8 +1211,6 @@
 
     <script>
         // --- CONFIGURACIÓN DE RATES (PROBABILIDADES) ---
-        // Puedes ajustar estos números para cambiar la dificultad del draft.
-        // La suma de probabilidades dentro de 'normal' no tiene que ser 100 (funciona por rangos acumulativos).
         const DRAFT_CONFIG = {
             normal: {
                 IF: 0.5,          // 0.5% Probabilidad Inazuma Future
@@ -1232,8 +1241,8 @@
         const pathCache = new Map();
 
         const translations = {
-            pos: { "GK": "Portero", "DF": "Defensa", "MF": "Medio", "FW": "Delantero", "Player": "Jugador", "Manager": "Entrenador", "Coordinator": "Gerente" },
-            elem: { "Fire": "Fuego", "Wind": "Aire", "Mountain": "Montaña", "Earth": "Montaña", "Wood": "Bosque", "Void": "Neutro", "Null": "Neutro" }
+            pos: { "GK": "Portero", "DF": "Defensa", "MF": "Mediocampista", "FW": "Delantero", "Player": "Jugador", "Manager": "Entrenador", "Coordinator": "Gerente" },
+            elem: { "Fire": "Fuego", "Wind": "Viento", "Mountain": "Montaña", "Forest": "Bosque", "Void": "Neutro" }
         };
 
         const formations = {
@@ -1480,6 +1489,7 @@
             flash.classList.remove('active');
             packVisual.className = 'pack-visual';
 
+            // Scroll oculto durante animacion
             const grid = document.querySelector('.modal-grid');
             if (grid) grid.style.overflowX = 'hidden';
 
@@ -1488,7 +1498,7 @@
             if (isSpecial) modalBox.classList.add('god-pack');
             else modalBox.classList.remove('god-pack');
 
-            // --- LÓGICA DE SELECCIÓN DE JUGADORES (Rates dinámicos) ---
+            // --- LÓGICA DE SELECCIÓN DE JUGADORES ---
             let pool = [];
             if (role === 'Player') {
                 pool = (strict && posCode !== 'Player') ? database.filter(p => p.role === 'Player' && p.perfil.posicion === posCode) : database.filter(p => p.role === 'Player');
@@ -1571,10 +1581,14 @@
             if (isSpecial) {
                 packTierClass = 'p-god';
             } else {
+                // Calcular media de los 5 jugadores
                 const avgTotal = picks.reduce((sum, p) => sum + calcTotal(p), 0) / (picks.length || 1);
+
                 if (avgTotal >= limitGold) packTierClass = 'p-gold';
                 else if (avgTotal >= limitSilverShiny) packTierClass = 'p-silver';
+                // si es menor, se queda en p-bronze
             }
+            // Aplicar clase de color al sobre
             packVisual.classList.add(packTierClass);
 
             // --- SECUENCIA DE ANIMACIÓN (FLASH SPEED) ---
@@ -1615,7 +1629,7 @@
                 let statsHtml = "";
                 if (p.stats) {
                     statsHtml = `<div class="stats-grid">`;
-                    const statKeys = { "Tir": "tiro", "Con": "control", "Tec": "tecnica", "Def": "presion", "Fis": "fisico", "Rap": "agilidad" };
+                    const statKeys = { "Tiro": "tiro", "Control": "control", "Técnica": "tecnica", "Presión": "presion", "Físico": "fisico", "Agilidad": "agilidad" };
                     for (const [label, key] of Object.entries(statKeys)) {
                         const val = p.stats[key] || 0;
                         statsHtml += `<div class="stat-item"><span>${label}</span><span>${val}</span></div>`;
