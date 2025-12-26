@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Inazuma Draft - Zero Lag</title>
+    <title>Inazuma Draft - Thread Optimized</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="data.js" onerror="console.log('Modo manual activo')"></script>
 
@@ -156,6 +156,13 @@
         .btn-start:hover {
             background: var(--accent-gold-bright);
             transform: scale(1.02);
+        }
+
+        .btn-start:disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+            transform: none;
         }
 
         /* HEADER */
@@ -995,7 +1002,7 @@
                 <select id="formationInput" class="config-select"></select>
             </div>
             <div id="formation-preview" class="preview-pitch"></div>
-            <button class="btn-start" onclick="startGame()">INICIAR DRAFT</button>
+            <button id="startBtn" class="btn-start" onclick="startGame()">INICIAR DRAFT</button>
         </div>
     </div>
 
@@ -1064,7 +1071,7 @@
         let specialSlotIndices = new Set();
         let currentSlotIndex = 0;
 
-        // ALMACEN DEL PRE-CALCULO (Solo IDs y Datos, NO imagenes)
+        // ALMACEN DEL PRE-CALCULO (SOLO DATOS, NO IMAGENES AUN)
         const draftCache = {};
         const pathCache = new Map();
 
@@ -1084,9 +1091,8 @@
 
         const baseSeasons = ['IE1', 'IE2', 'IE3', 'IEGO', 'GOCS', 'GOGX', 'ARES', 'ORION', 'VICTORY ROAD'];
 
-        // --- SISTEMA PRE-LOADER MASIVO ---
-
-        // 1. Encontrar ruta válida (Parallel Search)
+        // --- SISTEMA PRE-LOADER INTELIGENTE ---
+        // Encuentra la ruta valida ANTES de mostrar la carta
         function findValidPath(id, name) {
             return new Promise((resolve) => {
                 if (pathCache.has(id)) {
@@ -1118,9 +1124,9 @@
                     };
                     img.onerror = () => {
                         pending--;
-                        if (pending === 0 && !solved) resolve(null);
+                        if (pending === 0 && !solved) resolve(null); // No encontrada
                     };
-                    img.src = src; // Inicia la descarga
+                    img.src = src;
                 });
             });
         }
@@ -1137,24 +1143,20 @@
             });
         };
 
-        // 2. Generar 5 candidatos para un slot (SOLO DATOS, RAPIDO)
+        // 2. Generar 5 candidatos para un slot (OPTIMIZADO: Filtros fuera del loop)
         function preGenerateForSlot(slotIndex, pos, role, isSpecial) {
             let pool = [];
-
             if (role === 'Player') {
                 pool = database.filter(p => p.role === 'Player' && p.perfil.posicion === pos);
             } else {
                 pool = database.filter(p => p.role === role);
             }
 
-            const pickUnique = (sourceArr) => {
-                return sourceArr[Math.floor(Math.random() * sourceArr.length)];
-            }
-
+            const pickUnique = (sourceArr) => sourceArr[Math.floor(Math.random() * sourceArr.length)];
             let picks = [];
             let uniqueSet = new Set();
 
-            // LOGICA RATES
+            // Optimización: Filtros UNA SOLA VEZ por slot
             const poolIF = pool.filter(p => calcTotal(p) >= limitIF);
             const poolGoldS = pool.filter(p => calcTotal(p) < limitIF && calcTotal(p) >= limitGoldShiny);
             const poolGold = pool.filter(p => calcTotal(p) < limitGoldShiny && calcTotal(p) >= limitGold);
@@ -1186,48 +1188,54 @@
                     if (uniqueSet.size >= pool.length) break;
                 }
             }
-
-            // GUARDAR SOLO DATOS
             draftCache[slotIndex] = picks;
         }
 
-        // 3. Ejecutar pre-calculo ( SIN IMAGENES )
-        function preGenerateEntireDraft() {
-            // Recorrer formacion
+        // 3. Ejecutar pre-calculo ASINCRONO (Para no congelar UI)
+        async function preGenerateEntireDraft() {
             let slotIndex = 0;
             const layout = formations[currentFormation];
 
+            // Helper para esperar y no bloquear
+            const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
             // Campo
-            layout.forEach(row => {
-                row.forEach(pos => {
+            for (const row of layout) {
+                for (const pos of row) {
                     const isSpecial = specialSlotIndices.has(slotIndex);
                     preGenerateForSlot(slotIndex, pos, 'Player', isSpecial);
                     slotIndex++;
-                });
-            });
+                }
+                await sleep(0); // Ceder control al navegador
+            }
 
-            // Banquillo (5)
+            // Banquillo
             for (let i = 0; i < 5; i++) {
                 const isSpecial = specialSlotIndices.has(slotIndex);
                 preGenerateForSlot(slotIndex, 'Player', 'Player', isSpecial);
                 slotIndex++;
+                await sleep(0);
             }
 
-            // Manager (1)
+            // Manager
             preGenerateForSlot(slotIndex, 'Manager', 'Manager', true);
             slotIndex++;
 
-            // Coordinadores (3)
+            // Coordinadores
             for (let i = 0; i < 3; i++) {
                 preGenerateForSlot(slotIndex, 'Coordinator', 'Coordinator', true);
                 slotIndex++;
             }
-            console.log("DRAFT PRE-CALCULADO (DATA ONLY)");
-        }
 
-        function getSafeName(name) {
-            let str = name.toLowerCase();
-            return str.replace(/[^a-z0-9]/g, '');
+            // AL TERMINAR, CAMBIAR PANTALLA
+            document.getElementById('config-overlay').style.display = 'none';
+            document.getElementById('main-header').style.display = 'flex';
+            document.getElementById('main-layout').style.display = 'flex';
+
+            // Restaurar botón
+            const btn = document.getElementById('startBtn');
+            btn.innerText = "INICIAR DRAFT";
+            btn.disabled = false;
         }
 
         function getBaseName(name) {
@@ -1286,11 +1294,16 @@
             const selector = document.getElementById('formationInput');
             currentFormation = selector.value;
             document.getElementById('displayFormation').innerText = currentFormation;
-            document.getElementById('config-overlay').style.display = 'none';
-            document.getElementById('main-header').style.display = 'flex';
-            document.getElementById('main-layout').style.display = 'flex';
 
-            initDraft();
+            // Feedback Visual
+            const btn = document.getElementById('startBtn');
+            btn.innerText = "GENERANDO...";
+            btn.disabled = true;
+
+            // Iniciar proceso asincrono
+            setTimeout(() => {
+                initDraft();
+            }, 50);
         }
 
         function onDataLoaded() { calculateThresholds(); }
@@ -1372,7 +1385,7 @@
             coordinatorsRow.innerHTML = "";
             for (let i = 0; i < 3; i++) createSlot(coordinatorsRow, "Coordinator", "Coordinator", true, true);
 
-            // CALCULO MASIVO DE DATOS (INSTANTANEO)
+            // CALCULO MASIVO ASINCRONO
             preGenerateEntireDraft();
         }
 
