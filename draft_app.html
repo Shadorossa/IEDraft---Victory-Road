@@ -1,0 +1,1568 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Inazuma Draft Ultimate - Final Rates</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="data.js" onerror="console.log('Modo manual activo')"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Orbitron:wght@500;700;900&display=swap');
+
+        :root {
+            --bg-dark: #0a0a0a;
+            --bg-panel: rgba(20, 20, 20, 0.95);
+
+            /* Colores de Interfaz */
+            --accent-gold: #c5a059;
+            --accent-gold-bright: #f1c40f;
+            --text-main: #ecf0f1;
+
+            /* --- RAREZAS --- */
+            /* 1. IN FORM (IF) */
+            --c-if-border: #f1c40f;
+            --c-if-bg: #000;
+            --c-if-text: #f1c40f;
+            --c-if-shadow: rgba(241, 196, 15, 0.6);
+
+            /* 2. GOLD SHINY */
+            --c-gold-s-border: #f9e79f;
+            --c-gold-s-bg: linear-gradient(135deg, #8a6e2f, #d4ac0d);
+
+            /* 3. GOLD */
+            --c-gold-border: #705b2e;
+            --c-gold-bg: #362e1e;
+
+            /* 4. SILVER SHINY */
+            --c-silver-s-border: #a0a0a0;
+            --c-silver-s-bg: linear-gradient(135deg, #555, #888);
+
+            /* 5. SILVER */
+            --c-silver-border: #444;
+            --c-silver-bg: #1c1c1c;
+
+            --stat-low: #e74c3c;
+            --stat-mid: #f39c12;
+            --stat-high: #2ecc71;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Chakra Petch', sans-serif;
+            background-color: var(--bg-dark);
+            background-image: radial-gradient(circle at 50% 0%, #1f1f1f 0%, #000 80%);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+            overflow-y: auto;
+            padding-bottom: 120px;
+        }
+
+        /* --- CONFIGURACIÓN --- */
+        #config-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.98);
+            z-index: 9000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .config-box {
+            background: #111;
+            border: 1px solid #444;
+            padding: 50px;
+            border-radius: 8px;
+            box-shadow: 0 0 50px rgba(197, 160, 89, 0.1);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            width: 500px;
+        }
+
+        .config-title {
+            font-family: 'Orbitron';
+            font-size: 2rem;
+            color: var(--accent-gold);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 15px;
+        }
+
+        .config-select {
+            background: #000;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 15px;
+            font-size: 1.2rem;
+            font-family: 'Orbitron';
+            width: 100%;
+            text-align: center;
+            outline: none;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .config-select:hover {
+            border-color: var(--accent-gold);
+        }
+
+        .preview-pitch {
+            width: 200px;
+            height: 260px;
+            background: #1a1a1a;
+            border: 2px solid #444;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-evenly;
+            padding: 10px;
+            position: relative;
+        }
+
+        .preview-row {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            z-index: 2;
+        }
+
+        .preview-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #333;
+            border: 1px solid #666;
+        }
+
+        .preview-row:last-child .preview-dot {
+            background: var(--accent-gold);
+            border-color: var(--accent-gold-bright);
+        }
+
+        .btn-start {
+            background: var(--accent-gold);
+            color: #000;
+            font-family: 'Orbitron';
+            font-weight: 900;
+            font-size: 1.2rem;
+            padding: 15px 40px;
+            border: none;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-start:hover {
+            background: var(--accent-gold-bright);
+            transform: scale(1.02);
+        }
+
+        /* --- HEADER --- */
+        header {
+            width: 100%;
+            height: 80px;
+            background: #0f0f0f;
+            border-bottom: 1px solid #333;
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 50px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.8);
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            margin: 0;
+            font-weight: 800;
+            font-style: italic;
+            text-transform: uppercase;
+            font-size: 2rem;
+            letter-spacing: 2px;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+        }
+
+        .controls-group {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .info-pill {
+            font-family: 'Orbitron';
+            font-size: 1rem;
+            padding: 8px 20px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 4px;
+            color: #888;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .info-pill strong {
+            color: #fff;
+            font-size: 1.2rem;
+        }
+
+        .info-pill.power strong {
+            color: var(--accent-gold-bright);
+        }
+
+        button.btn-small {
+            background: #222;
+            border: 1px solid #444;
+            color: #ccc;
+            padding: 8px 20px;
+            font-family: 'Chakra Petch';
+            font-weight: bold;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: 0.2s;
+        }
+
+        button.btn-small:hover {
+            background: #eee;
+            color: #000;
+        }
+
+        button.btn-photo {
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+        }
+
+        button.btn-photo:hover {
+            background: var(--accent-gold);
+            color: #000;
+        }
+
+        /* --- CANCHA --- */
+        #main-layout {
+            display: none;
+            align-items: flex-start;
+            justify-content: center;
+            gap: 40px;
+            padding: 40px;
+            width: fit-content;
+        }
+
+        .pitch-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 25px;
+        }
+
+        .pitch {
+            width: 950px;
+            height: 850px;
+            background-color: #1a3c22;
+            background-image:
+                linear-gradient(rgba(0, 0, 0, 0.15) 2px, transparent 2px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                radial-gradient(circle at center, transparent 0%, rgba(0, 0, 0, 0.6) 100%);
+            background-size: 100% 85px, 85px 100%, 100% 100%;
+            border: 5px solid #ccc;
+            box-shadow: 0 10px 60px rgba(0, 0, 0, 0.8);
+            border-radius: 12px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-evenly;
+            padding: 20px 0;
+            overflow: hidden;
+        }
+
+        .pitch-lines-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .field-line-box {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .penalty-area {
+            width: 55%;
+            height: 16%;
+        }
+
+        .penalty-area.top {
+            top: 0;
+            border-top: none;
+        }
+
+        .penalty-area.bottom {
+            bottom: 0;
+            border-bottom: none;
+        }
+
+        .goal-area {
+            width: 26%;
+            height: 6%;
+        }
+
+        .goal-area.top {
+            top: 0;
+            border-top: none;
+        }
+
+        .goal-area.bottom {
+            bottom: 0;
+            border-bottom: none;
+        }
+
+        .pitch::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.5);
+            z-index: 1;
+        }
+
+        .pitch::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 200px;
+            height: 200px;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+        }
+
+        .field-row {
+            display: flex;
+            justify-content: center;
+            gap: 60px;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* --- CARTAS (SLOTS) --- */
+        .slot {
+            width: 130px;
+            height: 185px;
+            background: rgba(15, 15, 15, 0.95);
+            border: 1px solid #333;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+            z-index: 5;
+            transform: skewX(-3deg);
+        }
+
+        .slot:not(.filled) {
+            animation: pulse-border-charge 2s infinite;
+        }
+
+        @keyframes pulse-border-charge {
+            0% {
+                border-color: #333;
+            }
+
+            50% {
+                border-color: #666;
+                background: rgba(30, 30, 30, 0.9);
+            }
+
+            100% {
+                border-color: #333;
+            }
+        }
+
+        .slot:hover {
+            transform: translateY(-8px) scale(1.05) skewX(-3deg);
+            z-index: 100;
+            border-color: #fff;
+        }
+
+        .slot.filled {
+            border-width: 2px;
+            border-style: solid;
+            animation: none;
+        }
+
+        /* TIERS */
+        .slot.filled.s-if {
+            background: var(--c-if-bg);
+            border-color: var(--c-if-border);
+            box-shadow: 0 0 20px var(--c-if-shadow);
+        }
+
+        .slot.filled.s-if .mini-name {
+            color: var(--c-if-text);
+        }
+
+        .slot.filled.s-gold-s {
+            background: var(--c-gold-s-bg);
+            border-color: var(--c-gold-s-border);
+            box-shadow: 0 0 15px rgba(212, 172, 13, 0.4);
+        }
+
+        .slot.filled.s-gold-s .mini-name {
+            color: #3d3000;
+            text-shadow: none;
+        }
+
+        .slot.filled.s-gold-s .mini-info {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .slot.filled.s-gold {
+            background: var(--c-gold-bg);
+            border-color: var(--c-gold-border);
+        }
+
+        .slot.filled.s-silver-s {
+            background: var(--c-silver-s-bg);
+            border-color: var(--c-silver-s-border);
+            box-shadow: none;
+        }
+
+        .slot.filled.s-silver-s .mini-name {
+            color: #222;
+            text-shadow: none;
+        }
+
+        .slot.filled.s-silver-s .mini-info {
+            background: rgba(255, 255, 255, 0.35);
+        }
+
+        .slot.filled.s-silver {
+            background: var(--c-silver-bg);
+            border-color: var(--c-silver-border);
+            box-shadow: none;
+        }
+
+        .pos-label {
+            font-size: 2.2rem;
+            color: rgba(255, 255, 255, 0.1);
+            font-weight: 900;
+            font-family: 'Orbitron';
+            pointer-events: none;
+            font-style: italic;
+        }
+
+        .mini-player {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mini-img {
+            width: 120%;
+            height: 90%;
+            object-fit: contain;
+            object-position: bottom;
+            position: absolute;
+            bottom: 15%;
+            left: -10%;
+            filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.6));
+            transition: transform 0.3s ease;
+        }
+
+        /* ZOOM UNIFICADO */
+        .slot.filled:hover .mini-img {
+            transform: scale(1.08);
+        }
+
+        .mini-info {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 26%;
+            background: rgba(0, 0, 0, 0.9);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2;
+        }
+
+        .mini-name {
+            font-size: 0.8rem;
+            color: #fff;
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            width: 95%;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .mini-total {
+            font-family: 'Orbitron';
+            font-size: 0.9rem;
+            margin-top: 2px;
+            font-weight: 900;
+            font-style: italic;
+            color: #fff;
+        }
+
+        .mini-badge {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            background: #222;
+            color: #fff;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 3px;
+            border: 1px solid #555;
+            z-index: 5;
+            font-weight: 900;
+            font-family: 'Orbitron';
+        }
+
+        /* --- SIDEBAR --- */
+        #sidebar-wrapper {
+            display: flex;
+            gap: 30px;
+            background: var(--bg-panel);
+            padding: 35px;
+            border-radius: 15px;
+            border: 1px solid #333;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+        }
+
+        .sidebar-title {
+            font-family: 'Orbitron';
+            color: #fff;
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 1.2rem;
+            border-bottom: 1px solid #555;
+            width: 100%;
+            font-weight: 900;
+            font-style: italic;
+        }
+
+        .bench-column,
+        .staff-column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .slot.bench-card {
+            width: 100px;
+            height: 140px;
+        }
+
+        .slot.bench-card .pos-label {
+            font-size: 1.5rem;
+        }
+
+        .slot.big-boss {
+            width: 150px;
+            height: 210px;
+            border: 1px solid #fff;
+            margin-bottom: 25px;
+        }
+
+        /* --- RESERVAS --- */
+        #reserves-section {
+            width: 950px;
+            background: #151515;
+            border-top: 2px solid #444;
+            border-radius: 0 0 15px 15px;
+            padding: 20px 25px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            margin-top: -15px;
+            z-index: 20;
+            position: relative;
+        }
+
+        .reserves-title {
+            font-family: 'Orbitron';
+            color: #888;
+            font-size: 1rem;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            border-bottom: 1px solid #333;
+            width: 100%;
+            text-align: left;
+            font-weight: 900;
+            font-style: italic;
+        }
+
+        .reserves-grid {
+            display: flex;
+            flex-wrap: nowrap;
+            justify-content: space-between;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .reserve-slot {
+            width: 85px;
+            height: 115px;
+            background: #222;
+            border: 1px solid #444;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+            transition: 0.3s;
+            flex-shrink: 0;
+        }
+
+        /* Hereda estilos reducidos */
+        .reserve-slot.s-if {
+            border: 1px solid var(--c-if-border);
+            background: #111;
+        }
+
+        .reserve-slot.s-gold-s {
+            border: 1px solid var(--c-gold-s-border);
+            background: #3d3000;
+        }
+
+        .reserve-slot.s-gold {
+            border: 1px solid var(--c-gold-border);
+            background: #2b2515;
+        }
+
+        .reserve-slot.s-silver-s {
+            border: 1px solid var(--c-silver-s-border);
+            background: #333;
+        }
+
+        .reserve-slot:hover {
+            transform: translateY(-5px);
+        }
+
+        .reserve-pos {
+            position: absolute;
+            top: 3px;
+            right: 3px;
+            font-size: 0.6rem;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 2px 4px;
+            border-radius: 2px;
+            z-index: 2;
+            font-family: 'Orbitron';
+        }
+
+        .reserve-img {
+            width: 110%;
+            height: 80%;
+            object-fit: contain;
+            object-position: bottom;
+            position: absolute;
+            bottom: 20%;
+            filter: grayscale(0.5);
+        }
+
+        .reserve-slot:hover .reserve-img {
+            filter: grayscale(0);
+        }
+
+        .reserve-name-box {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 24%;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2;
+        }
+
+        .reserve-name {
+            font-size: 0.6rem;
+            color: #ddd;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 95%;
+            text-align: center;
+        }
+
+        /* --- MODAL --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 5000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            width: 95%;
+            max-width: 1400px;
+            background: #1a1a1a;
+            border: 1px solid #555;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .modal-content.god-pack {
+            border-color: var(--accent-gold-bright);
+            box-shadow: 0 0 50px rgba(241, 196, 15, 0.1);
+        }
+
+        .modal-header {
+            padding: 25px 40px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #modalTitle {
+            font-family: 'Orbitron';
+            font-weight: 900;
+            font-style: italic;
+            font-size: 2rem;
+            color: #fff;
+        }
+
+        .modal-grid {
+            display: flex;
+            flex-wrap: nowrap;
+            justify-content: center;
+            gap: 30px;
+            padding: 60px 30px;
+            overflow-x: auto;
+            align-items: center;
+            background: radial-gradient(circle, #252525 0%, #1a1a1a 100%);
+        }
+
+        .choice-card {
+            background: #252525;
+            border: 2px solid #444;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            width: 230px;
+            height: 340px;
+            flex-shrink: 0;
+            opacity: 0;
+            animation: revealCard 0.4s forwards;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+            transform: skewX(-2deg);
+        }
+
+        @keyframes revealCard {
+            to {
+                opacity: 1;
+                transform: skewX(-2deg) translateY(0);
+            }
+
+            from {
+                opacity: 0;
+                transform: skewX(-2deg) translateY(40px);
+            }
+        }
+
+        /* ANIMACIÓN CORREGIDA: ZOOM COMPLETO AL CONTENEDOR */
+        .choice-card:hover {
+            transform: scale(1.1) skewX(-2deg);
+            z-index: 100;
+        }
+
+        .choice-card.s-if {
+            border: 2px solid var(--c-if-border);
+            background: var(--c-if-bg);
+            box-shadow: 0 0 40px var(--c-if-shadow);
+        }
+
+        .choice-card.s-gold-s {
+            border: 2px solid var(--c-gold-s-border);
+            background: var(--c-gold-s-bg);
+            box-shadow: 0 0 30px rgba(212, 172, 13, 0.3);
+        }
+
+        .choice-card.s-gold {
+            border: 2px solid var(--c-gold-border);
+            background: var(--c-gold-bg);
+        }
+
+        .choice-card.s-silver-s {
+            border: 2px solid var(--c-silver-s-border);
+            background: var(--c-silver-s-bg);
+        }
+
+        .choice-card.s-silver {
+            border: 2px solid var(--c-silver-border);
+            background: var(--c-silver-bg);
+        }
+
+        .choice-img-box {
+            height: 190px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+
+        .choice-img {
+            height: 95%;
+            filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.8));
+            z-index: 2;
+            transition: 0.3s;
+        }
+
+        .choice-info {
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .choice-name {
+            font-size: 1.1rem;
+            color: #fff;
+            font-weight: 700;
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 8px;
+            margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-family: 'Orbitron';
+            font-style: italic;
+        }
+
+        .choice-card.s-gold-s .choice-name,
+        .choice-card.s-silver-s .choice-name {
+            color: #222;
+            border-color: rgba(0, 0, 0, 0.2);
+        }
+
+        .choice-card.s-if .choice-name {
+            color: var(--c-if-text);
+        }
+
+        .choice-score {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: #222;
+            border: 1px solid #555;
+            color: #fff;
+            padding: 5px 12px;
+            font-family: 'Orbitron';
+            font-weight: 900;
+            font-size: 1.2rem;
+            border-radius: 4px;
+            z-index: 10;
+            font-style: italic;
+        }
+
+        .choice-card.s-if .choice-score {
+            color: var(--c-if-text);
+            border-color: var(--c-if-border);
+            background: #000;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px 15px;
+            font-size: 0.8rem;
+            color: #aaa;
+        }
+
+        .choice-card.s-gold-s .stats-grid,
+        .choice-card.s-silver-s .stats-grid {
+            color: #333;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .el-Fuego {
+            color: #ff5252;
+        }
+
+        .el-Aire {
+            color: #00e676;
+        }
+
+        .el-Bosque {
+            color: #29b6f6;
+        }
+
+        .el-Montaña {
+            color: #ffb300;
+        }
+
+        .el-Neutro {
+            color: #e040fb;
+        }
+
+        #manual-load {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="manual-load" style="display: none;">
+        <h2 style="color:var(--accent-gold); font-family:'Orbitron'">CARGA DE BASE DE DATOS</h2>
+        <input type="file" id="jsonFile" accept=".json"
+            style="margin-top:20px; color:#fff; background:#222; padding:10px; border:1px solid #555;">
+    </div>
+
+    <div id="config-overlay">
+        <div class="config-box">
+            <div class="config-title">SYSTEM START</div>
+            <div style="text-align: left; width: 100%;">
+                <label
+                    style="color:#888; font-size:0.8rem; margin-bottom:8px; display:block; text-transform:uppercase; letter-spacing:1px;">Seleccionar
+                    Táctica</label>
+                <select id="formationInput" class="config-select"></select>
+            </div>
+            <div id="formation-preview" class="preview-pitch"></div>
+            <button class="btn-start" onclick="startGame()">INICIAR DRAFT</button>
+        </div>
+    </div>
+
+    <header id="main-header">
+        <h1>VICTORY ROAD</h1>
+        <div class="controls-group">
+            <div class="info-pill">TÁCTICA: <strong id="displayFormation">4-4-2</strong></div>
+            <div class="info-pill power">PODER: <strong id="team-power">0</strong></div>
+            <button class="btn-small" onclick="resetDraft()">REINICIAR</button>
+            <button class="btn-small btn-photo" onclick="takeScreenshot()">FOTO</button>
+        </div>
+    </header>
+
+    <div id="main-layout">
+        <div class="pitch-wrapper">
+            <div class="pitch" id="pitchBoard">
+                <div class="pitch-lines-container">
+                    <div class="field-line-box penalty-area top"></div>
+                    <div class="field-line-box penalty-area bottom"></div>
+                    <div class="field-line-box goal-area top"></div>
+                    <div class="field-line-box goal-area bottom"></div>
+                </div>
+            </div>
+            <div id="reserves-section">
+                <div class="reserves-title">LISTA DE SUSTITUTOS</div>
+                <div id="reserves-container" class="reserves-grid"></div>
+            </div>
+        </div>
+
+        <div id="sidebar-wrapper">
+            <div class="bench-column">
+                <div class="sidebar-title">BANQUILLO</div>
+                <div id="benchBoard" style="display: flex; flex-direction: column; gap: 15px;"></div>
+            </div>
+            <div class="staff-column">
+                <div class="sidebar-title">STAFF TÉCNICO</div>
+                <div id="staff-container">
+                    <div id="manager-slot-area"></div>
+                    <div class="bench-row" id="coordinators-row" style="margin-top: 20px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="draftModal">
+        <div class="modal-content" id="modalBox">
+            <div class="modal-header">
+                <h2 id="modalTitle"></h2>
+            </div>
+            <div class="modal-grid" id="modalOptions"></div>
+        </div>
+    </div>
+
+    <script>
+        let database = [];
+        let pickedIDs = new Set();
+        let pickedBaseNames = new Set();
+        let currentFormation = "4-4-2";
+        let teamTotal = 0;
+
+        let limitIF = 0;
+        let limitGoldShiny = 0;
+        let limitGold = 0;
+        let limitSilverShiny = 0;
+
+        let specialSlotIndices = new Set();
+        let currentSlotIndex = 0;
+
+        const translations = {
+            pos: { "GK": "Portero", "DF": "Defensa", "MF": "Medio", "FW": "Delantero", "Player": "Jugador", "Manager": "Entrenador", "Coordinator": "Gerente" },
+            elem: { "Fire": "Fuego", "Wind": "Aire", "Mountain": "Montaña", "Earth": "Montaña", "Wood": "Bosque", "Void": "Neutro", "Null": "Neutro" }
+        };
+
+        const formations = {
+            "4-4-2": [["FW", "FW"], ["MF", "MF", "MF", "MF"], ["DF", "DF", "DF", "DF"], ["GK"]],
+            "3-5-2": [["FW", "FW"], ["MF", "MF", "MF", "MF", "MF"], ["DF", "DF", "DF"], ["GK"]],
+            "4-3-3": [["FW", "FW", "FW"], ["MF", "MF", "MF"], ["DF", "DF", "DF", "DF"], ["GK"]],
+            "4-5-1": [["FW"], ["MF", "MF", "MF", "MF", "MF"], ["DF", "DF", "DF", "DF"], ["GK"]],
+            "3-6-1": [["FW"], ["MF", "MF", "MF", "MF", "MF", "MF"], ["DF", "DF", "DF"], ["GK"]],
+            "5-4-1": [["FW"], ["MF", "MF", "MF", "MF"], ["DF", "DF", "DF", "DF", "DF"], ["GK"]]
+        };
+
+        const baseSeasons = ['IE1', 'IE2', 'IE3', 'IEGO', 'GOCS', 'GOGX', 'ARES', 'ORION', 'VICTORY ROAD'];
+        const allPaths = [];
+        baseSeasons.forEach(season => {
+            allPaths.push(`img/${season}/`);
+            allPaths.push(`img/${season}/scouts/`);
+        });
+
+        window.tryLoadImage = function (img, id, safeName) {
+            let currentTry = parseInt(img.getAttribute('data-try') || 0);
+            currentTry++;
+
+            if (currentTry < allPaths.length) {
+                img.setAttribute('data-try', currentTry);
+                img.src = `${allPaths[currentTry]}${id}_${safeName}.png`;
+            } else {
+                img.onerror = null;
+                img.style.opacity = '0.3';
+            }
+        };
+
+        function getSafeName(name) {
+            let str = name.toLowerCase();
+            const map = { 'ă': 'a', 'â': 'a', 'î': 'i', 'ș': 's', 'ț': 't', 'ñ': 'n', 'ß': 's', 'ö': 'o', 'ä': 'a', 'ü': 'u' };
+            for (let char in map) str = str.replace(new RegExp(char, 'g'), map[char]);
+            str = str.replace(/[áéíóú]/g, '');
+            return str.replace(/[^a-z0-9]/g, '');
+        }
+
+        function getBaseName(name) {
+            return name.split('(')[0].trim().toLowerCase();
+        }
+
+        window.onload = () => {
+            document.getElementById('main-header').style.display = 'none';
+            document.getElementById('main-layout').style.display = 'none';
+            document.getElementById('config-overlay').style.display = 'flex';
+
+            const formSelect = document.getElementById('formationInput');
+            Object.keys(formations).forEach(f => {
+                const opt = document.createElement('option');
+                opt.value = f; opt.innerText = f;
+                formSelect.appendChild(opt);
+            });
+
+            formSelect.addEventListener('change', (e) => updatePreview(e.target.value));
+            updatePreview(formSelect.value);
+
+            if (typeof INAZUMA_DATA !== 'undefined') {
+                database = INAZUMA_DATA;
+                onDataLoaded();
+            } else {
+                document.getElementById('manual-load').style.display = 'flex';
+            }
+            document.getElementById('jsonFile').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    try { database = JSON.parse(ev.target.result); document.getElementById('manual-load').style.display = 'none'; onDataLoaded(); } catch (err) { alert("JSON inválido"); }
+                };
+                reader.readAsText(file);
+            });
+        };
+
+        function updatePreview(formationName) {
+            const container = document.getElementById('formation-preview');
+            container.innerHTML = '';
+            const layout = formations[formationName];
+            layout.forEach(row => {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'preview-row';
+                row.forEach(() => {
+                    const dot = document.createElement('div');
+                    dot.className = 'preview-dot';
+                    rowDiv.appendChild(dot);
+                });
+                container.appendChild(rowDiv);
+            });
+        }
+
+        function startGame() {
+            const selector = document.getElementById('formationInput');
+            currentFormation = selector.value;
+            document.getElementById('displayFormation').innerText = currentFormation;
+            document.getElementById('config-overlay').style.display = 'none';
+            document.getElementById('main-header').style.display = 'flex';
+            document.getElementById('main-layout').style.display = 'flex';
+            initDraft();
+        }
+
+        function onDataLoaded() { calculateThresholds(); }
+
+        function calculateThresholds() {
+            let minTot = Infinity, maxTot = -Infinity;
+            database.forEach(p => {
+                let t = calcTotal(p);
+                if (t > 0) {
+                    if (t < minTot) minTot = t;
+                    if (t > maxTot) maxTot = t;
+                }
+            });
+            if (minTot === Infinity) { minTot = 0; maxTot = 600; }
+
+            limitIF = maxTot;
+            let rT = maxTot - minTot;
+            limitGoldShiny = minTot + (rT * 0.85);
+            limitGold = minTot + (rT * 0.60);
+            limitSilverShiny = minTot + (rT * 0.35);
+        }
+
+        function getTotalColorClass(val) {
+            if (val >= limitIF) return 's-if';
+            if (val >= limitGoldShiny) return 's-gold-s';
+            if (val >= limitGold) return 's-gold';
+            if (val >= limitSilverShiny) return 's-silver-s';
+            return 's-silver';
+        }
+
+        function generateSpecialSlots() {
+            specialSlotIndices.clear();
+            const numSpecials = Math.floor(Math.random() * 4) + 1;
+            while (specialSlotIndices.size < numSpecials) {
+                let rand = Math.floor(Math.random() * 20);
+                specialSlotIndices.add(rand);
+            }
+        }
+
+        function initDraft() {
+            if (!database.length) return;
+            const pitch = document.getElementById('pitchBoard');
+            pitch.innerHTML = `
+                <div class="pitch-lines-container">
+                    <div class="field-line-box penalty-area top"></div>
+                    <div class="field-line-box penalty-area bottom"></div>
+                    <div class="field-line-box goal-area top"></div>
+                    <div class="field-line-box goal-area bottom"></div>
+                </div>
+            `;
+
+            teamTotal = 0; updateStats();
+            pickedIDs.clear();
+            pickedBaseNames.clear();
+            document.getElementById('reserves-section').style.display = 'none';
+            document.getElementById('reserves-container').innerHTML = '';
+            generateSpecialSlots();
+            currentSlotIndex = 0;
+
+            formations[currentFormation].forEach(row => {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'field-row';
+                row.forEach(pos => createSlot(rowDiv, pos, "Player", true, false));
+                pitch.appendChild(rowDiv);
+            });
+
+            const bench = document.getElementById('benchBoard'); bench.innerHTML = "";
+            for (let i = 0; i < 5; i++) createSlot(bench, "Player", "Player", false, true);
+
+            const managerArea = document.getElementById('manager-slot-area');
+            managerArea.innerHTML = "";
+            createSlot(managerArea, "Manager", "Manager", true, true, true);
+
+            const coordinatorsRow = document.getElementById('coordinators-row');
+            coordinatorsRow.innerHTML = "";
+            for (let i = 0; i < 3; i++) createSlot(coordinatorsRow, "Coordinator", "Coordinator", true, true);
+        }
+
+        function createSlot(parent, posCode, role, strict, isBench, isBigBoss = false) {
+            const slot = document.createElement('div');
+            let classes = `slot`;
+            if (isBench) classes += ' bench-card';
+            if (isBigBoss) classes += ' big-boss';
+            const isSpecial = specialSlotIndices.has(currentSlotIndex);
+            if (isSpecial) classes += ' god-ready';
+            currentSlotIndex++;
+
+            slot.className = classes;
+            let label = posCode;
+            if (posCode === 'Player') label = 'RES'; if (posCode === 'Coordinator') label = 'GER'; if (posCode === 'Manager') label = 'ENT';
+            slot.innerHTML = `<div class="pos-label">${label}</div>`;
+
+            slot.onclick = () => {
+                if (slot.classList.contains('filled')) return;
+                openModal(slot, posCode, role, strict, isSpecial);
+            };
+            parent.appendChild(slot);
+        }
+
+        let activeSlot = null;
+        function openModal(slot, posCode, role, strict, isSpecial) {
+            activeSlot = slot;
+            const modal = document.getElementById('draftModal');
+            const modalBox = document.getElementById('modalBox');
+            const container = document.getElementById('modalOptions');
+            const title = document.getElementById('modalTitle');
+
+            modal.style.display = 'flex';
+            container.innerHTML = '';
+
+            title.innerText = (translations.pos[posCode] || posCode);
+
+            if (isSpecial) {
+                modalBox.classList.add('god-pack');
+            } else {
+                modalBox.classList.remove('god-pack');
+            }
+
+            let pool = [];
+            // FILTER BY ROLE AND POSITION STRICTLY
+            if (role === 'Player') {
+                pool = (strict && posCode !== 'Player') ? database.filter(p => p.role === 'Player' && p.perfil.posicion === posCode) : database.filter(p => p.role === 'Player');
+            } else {
+                pool = database.filter(p => p.role === role);
+            }
+
+            // EXTRA SAFETY
+            if (role === 'Manager') pool = pool.filter(p => p.role === 'Manager');
+            if (role === 'Coordinator') pool = pool.filter(p => p.role === 'Coordinator');
+            if (role === 'Player') pool = pool.filter(p => p.role === 'Player');
+
+            pool = pool.filter(p => !pickedIDs.has(p.id));
+            pool = pool.filter(p => !pickedBaseNames.has(getBaseName(p.nombre)));
+
+            let picks = [];
+            let roundNames = new Set();
+
+            const pickUnique = (sourceArr) => {
+                let shuffled = [...sourceArr].sort(() => 0.5 - Math.random());
+                for (let p of shuffled) {
+                    let bName = getBaseName(p.nombre);
+                    if (!roundNames.has(bName)) {
+                        roundNames.add(bName);
+                        return p;
+                    }
+                }
+                return null;
+            }
+
+            // LOGICA GOD PACK REVISADA (Strictly Gold Shiny+)
+            if (isSpecial) {
+                const poolIF = pool.filter(p => calcTotal(p) >= limitIF);
+                const poolGoldS = pool.filter(p => calcTotal(p) < limitIF && calcTotal(p) >= limitGoldShiny);
+                const poolGold = pool.filter(p => calcTotal(p) < limitGoldShiny && calcTotal(p) >= limitGold); // Solo por si acaso
+
+                for (let i = 0; i < 5; i++) {
+                    let rand = Math.random() * 100;
+                    let chosenPool = [];
+
+                    // GOD PACK RATES: 10% IF, 90% Gold Shiny
+                    // Solo si no hay Shinys, pilla normales
+                    if (rand < 10 && poolIF.length > 0) chosenPool = poolIF;
+                    else if (poolGoldS.length > 0) chosenPool = poolGoldS;
+                    else chosenPool = poolGold.length > 0 ? poolGold : poolIF;
+
+                    let p = pickUnique(chosenPool);
+                    if (!p) p = pickUnique(poolGoldS);
+                    if (!p) p = pickUnique(poolIF);
+
+                    if (!p) p = pickUnique(poolGold); // Fallback
+
+                    if (p) picks.push(p);
+                }
+
+            } else {
+                // LOGICA NORMAL
+                const t1 = pool.filter(p => calcTotal(p) >= limitIF);
+                const t2 = pool.filter(p => calcTotal(p) < limitIF && calcTotal(p) >= limitGoldShiny);
+                const t3 = pool.filter(p => calcTotal(p) < limitGoldShiny && calcTotal(p) >= limitGold);
+                const t4 = pool.filter(p => calcTotal(p) < limitGold && calcTotal(p) >= limitSilverShiny);
+                const t5 = pool.filter(p => calcTotal(p) < limitSilverShiny);
+
+                for (let i = 0; i < 5; i++) {
+                    let rand = Math.random() * 100;
+                    let tierPool = [];
+
+                    // NORMAL RATES: 0.5% IF, 5% GoldS, 20% Gold, 50% SilvS
+                    if (rand < 0.5 && t1.length > 0) tierPool = t1;
+                    else if (rand < 5.5 && t2.length > 0) tierPool = t2;
+                    else if (rand < 25.5 && t3.length > 0) tierPool = t3;
+                    else if (rand < 75.5 && t4.length > 0) tierPool = t4;
+                    else tierPool = t5.length > 0 ? t5 : pool;
+
+                    let p = pickUnique(tierPool);
+                    if (!p) {
+                        let allShuffled = [...pool].sort(() => 0.5 - Math.random());
+                        for (let candidate of allShuffled) {
+                            let bName = getBaseName(candidate.nombre);
+                            if (!roundNames.has(bName)) {
+                                p = candidate; roundNames.add(bName); break;
+                            }
+                        }
+                    }
+                    if (p) picks.push(p);
+                }
+            }
+
+            renderPicks(picks, container);
+        }
+
+        function renderPicks(players, container) {
+            if (players.length === 0) {
+                container.innerHTML = `
+                    <div style="display:flex; flex-direction:column; align-items:center; gap:20px;">
+                        <p style='color: #888; font-size: 1.2rem; font-family:"Orbitron"'>NO QUEDAN JUGADORES DISPONIBLES</p>
+                        <button onclick="closeModal()" class="btn-small">CERRAR</button>
+                    </div>
+                `;
+                return;
+            }
+
+            players.forEach((p, index) => {
+                const total = calcTotal(p);
+                const rareClass = getTotalColorClass(total);
+
+                const card = document.createElement('div');
+                card.className = `choice-card ${rareClass}`;
+                card.style.animationDelay = `${index * 0.1}s`;
+
+                const rawElem = p.perfil ? p.perfil.elemento : "Void";
+                const elemEs = translations.elem[rawElem] || rawElem;
+                const safeName = getSafeName(p.nombre);
+
+                // USE FIRST PATH INITIALLY
+                const imgSrc = `${allPaths[0]}${p.id}_${safeName}.png`;
+
+                let statsHtml = "";
+                if (p.stats) {
+                    statsHtml = `<div class="stats-grid">`;
+                    const statKeys = { "Tir": "tiro", "Con": "control", "Tec": "tecnica", "Def": "presion", "Fis": "fisico", "Rap": "agilidad" };
+                    for (const [label, key] of Object.entries(statKeys)) {
+                        const val = p.stats[key] || 0;
+                        statsHtml += `<div class="stat-item"><span>${label}</span><span>${val}</span></div>`;
+                    }
+                    statsHtml += `</div>`;
+                }
+                card.innerHTML = `
+                    <div class="choice-score ${rareClass}">${total}</div>
+                    <div class="choice-img-box">
+                        <img src="${imgSrc}" class="choice-img" 
+                             data-try="0" 
+                             onerror="tryLoadImage(this, '${p.id}', '${safeName}')">
+                    </div>
+                    <div class="choice-info">
+                        <div class="choice-name">${p.nombre}</div>
+                        <div style="font-size:0.7rem; margin-bottom:2px; color:#aaa;"><span class="el-${elemEs}" style="font-weight:bold;">${elemEs}</span> • ${p.role === 'Player' ? p.perfil.posicion : 'Staff'}</div>
+                        ${statsHtml}
+                    </div>
+                `;
+                card.onclick = () => fillSlot(p, total, safeName, elemEs, rareClass);
+                container.appendChild(card);
+            });
+        }
+
+        function fillSlot(p, total, safeName, elemEs, rareClass) {
+            pickedIDs.add(p.id);
+            pickedBaseNames.add(getBaseName(p.nombre));
+
+            const slot = activeSlot;
+            slot.classList.add('filled');
+            slot.classList.add(rareClass);
+
+            const pos = p.perfil ? p.perfil.posicion : (p.role === 'Manager' ? 'ENT' : 'GER');
+            const imgSrc = `${allPaths[0]}${p.id}_${safeName}.png`;
+
+            slot.innerHTML = `
+                <div class="mini-player">
+                    <div class="mini-badge el-${elemEs}">${pos}</div>
+                    <img src="${imgSrc}" class="mini-img" 
+                         data-try="0" 
+                         onerror="tryLoadImage(this, '${p.id}', '${safeName}')">
+                    <div class="mini-info">
+                        <div class="mini-name">${p.nombre}</div>
+                        <div class="mini-total">TOT: ${total}</div>
+                    </div>
+                </div>
+            `;
+            teamTotal += total; updateStats(); closeModal();
+
+            const filledCount = document.querySelectorAll('.slot.filled').length;
+            if (filledCount === 20) {
+                generateReserves();
+            }
+        }
+
+        function generateReserves() {
+            const layout = formations[currentFormation];
+            const neededPos = layout.flat();
+            const container = document.getElementById('reserves-container');
+            const section = document.getElementById('reserves-section');
+            container.innerHTML = '';
+
+            let reserveIDs = new Set();
+            neededPos.forEach(posCode => {
+                let candidates = database.filter(p =>
+                    p.role === 'Player' &&
+                    p.perfil.posicion === posCode &&
+                    !pickedIDs.has(p.id) &&
+                    !pickedBaseNames.has(getBaseName(p.nombre)) &&
+                    !reserveIDs.has(p.id)
+                );
+                if (candidates.length === 0) candidates = database.filter(p => p.role === 'Player' && p.perfil.posicion === posCode);
+
+                if (candidates.length > 0) {
+                    const pick = candidates[Math.floor(Math.random() * candidates.length)];
+                    reserveIDs.add(pick.id);
+                    const div = document.createElement('div');
+
+                    const total = calcTotal(pick);
+                    const rareClass = getTotalColorClass(total);
+                    div.className = `reserve-slot ${rareClass}`;
+
+                    const safeName = getSafeName(pick.nombre);
+                    const imgSrc = `${allPaths[0]}${pick.id}_${safeName}.png`;
+                    div.innerHTML = `
+                        <div class="reserve-pos">${posCode}</div>
+                        <img src="${imgSrc}" class="reserve-img" 
+                             data-try="0" 
+                             onerror="tryLoadImage(this, '${pick.id}', '${safeName}')">
+                        <div class="reserve-name-box"><div class="reserve-name">${pick.nombre}</div></div>
+                    `;
+                    container.appendChild(div);
+                }
+            });
+            section.style.display = 'flex';
+            section.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function takeScreenshot() {
+            const target = document.getElementById('main-layout');
+            if (!target) return;
+            const options = {
+                backgroundColor: "#0a0a0a",
+                scale: 1.5,
+                useCORS: true,
+                allowTaint: false,
+                logging: false,
+                width: target.scrollWidth,
+                height: target.scrollHeight,
+                windowWidth: target.scrollWidth,
+                windowHeight: target.scrollHeight,
+                x: 0, y: 0
+            };
+            const header = document.querySelector('header');
+            if (header) header.style.display = 'none';
+            window.scrollTo(0, 0);
+            html2canvas(target, options).then(canvas => {
+                if (header) header.style.display = 'flex';
+                const link = document.createElement('a');
+                link.download = `Draft_Team_${teamTotal}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            }).catch(err => {
+                console.error(err);
+                if (header) header.style.display = 'flex';
+                alert("Error al guardar imagen. Revisa consola.");
+            });
+        }
+
+        function updateStats() { document.getElementById('team-power').innerText = teamTotal; }
+        function calcTotal(p) { if (!p.stats) return 0; return Object.values(p.stats).reduce((a, b) => a + b, 0); }
+        function closeModal() { document.getElementById('draftModal').style.display = 'none'; }
+        function resetDraft() {
+            if (confirm("¿Reiniciar draft?")) {
+                document.getElementById('pitchBoard').innerHTML = `
+                <div class="pitch-lines-container">
+                    <div class="field-line-box penalty-area top"></div>
+                    <div class="field-line-box penalty-area bottom"></div>
+                    <div class="field-line-box goal-area top"></div>
+                    <div class="field-line-box goal-area bottom"></div>
+                </div>`;
+                document.getElementById('benchBoard').innerHTML = "";
+                document.getElementById('reserves-section').style.display = 'none';
+                document.getElementById('reserves-container').innerHTML = '';
+                document.getElementById('main-header').style.display = 'none';
+                document.getElementById('main-layout').style.display = 'none';
+                document.getElementById('config-overlay').style.display = 'flex';
+                teamTotal = 0; pickedIDs.clear(); pickedBaseNames.clear();
+            }
+        }
+    </script>
+</body>
+
+</html>
