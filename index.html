@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Inazuma Draft - Ultimate Loader</title>
+    <title>Inazuma Draft - Speed Loader</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="data.js" onerror="console.log('Modo manual activo')"></script>
 
@@ -30,6 +30,10 @@
             --c-silver-s-bg: linear-gradient(135deg, #555, #888);
             --c-silver-border: #444;
             --c-silver-bg: #1c1c1c;
+
+            --stat-low: #e74c3c;
+            --stat-mid: #f39c12;
+            --stat-high: #2ecc71;
         }
 
         * {
@@ -51,7 +55,7 @@
             padding-bottom: 120px;
         }
 
-        /* UI CONFIG */
+        /* CONFIG UI */
         #config-overlay {
             position: fixed;
             top: 0;
@@ -474,6 +478,7 @@
             overflow: hidden;
         }
 
+        /* ZOOM ANIMATION */
         .mini-img {
             width: 120%;
             height: 90%;
@@ -799,6 +804,7 @@
             }
         }
 
+        /* ZOOM AL CONTENEDOR */
         .choice-card:hover {
             transform: scale(1.1) skewX(-2deg);
             z-index: 100;
@@ -1045,7 +1051,7 @@
         let specialSlotIndices = new Set();
         let currentSlotIndex = 0;
 
-        // Cache de rutas para evitar re-buscar
+        // Cache para las rutas encontradas
         const pathCache = new Map();
 
         const translations = {
@@ -1062,45 +1068,31 @@
             "5-4-1": [["FW"], ["MF", "MF", "MF", "MF"], ["DF", "DF", "DF", "DF", "DF"], ["GK"]]
         };
 
-        // --- MOTOR DE BUSQUEDA DEFINITIVO ---
+        // --- MOTOR DE BUSQUEDA AUTOMÁTICO (PARALELO) ---
         const seasons = ['IE1', 'IE2', 'IE3', 'IEGO', 'GOCS', 'GOGX', 'ARES', 'ORION', 'VICTORY ROAD'];
 
         function generateCandidatePaths(id, name) {
-            // Limpieza robusta del nombre
-            // Anne Somnia -> AnneSomnia
-            let nameClean = name.split('(')[0].trim().replace(/[^a-zA-Z0-9]/g, '');
+            // Nombre Limpio: "Anne Somnia" -> "AnneSomnia"
+            const nameClean = name.split('(')[0].trim().replace(/[^a-zA-Z0-9]/g, '');
 
-            // Variantes de ID
-            const id4 = String(id).padStart(4, '0'); // 0001
-            const id3 = String(id).padStart(3, '0'); // 001
-            const id1 = String(id);                  // 1
+            // Variantes de ID (Tu repo usa 0001)
+            const id4 = String(id).padStart(4, '0');
+            const fileName = `${id4}_${nameClean}.png`;
 
             let paths = [];
 
             seasons.forEach(season => {
-                // Carpetas base
-                const root = `img/${season}`;
-                const scouts = `img/${season}/Scouts`; // Mayúscula importante
-                const scoutsLower = `img/${season}/scouts`; // Fallback
-
-                // PRIORIDAD 1: Scouts/0001_Name.png (Formato más común según tu repo)
-                paths.push(`${scouts}/${id4}_${nameClean}.png`);
-
-                // PRIORIDAD 2: Raíz/0001_Name.png
-                paths.push(`${root}/${id4}_${nameClean}.png`);
-
-                // PRIORIDAD 3: Variantes de ID (001 y 1)
-                paths.push(`${scouts}/${id3}_${nameClean}.png`);
-                paths.push(`${scouts}/${id1}_${nameClean}.png`);
-
-                // Fallbacks de carpeta minúscula
-                paths.push(`${scoutsLower}/${id4}_${nameClean}.png`);
+                // 1. CARPETA SCOUTS (Mayúscula) -> Lo más probable
+                paths.push(`img/${season}/Scouts/${fileName}`);
+                // 2. CARPETA RAIZ
+                paths.push(`img/${season}/${fileName}`);
             });
             return paths;
         }
 
-        // CARGA PARALELA E INSTANTÁNEA
+        // CARGA INSTANTANEA
         function findAndLoadImage(imgElement, id, name) {
+            // 1. Check Cache
             if (pathCache.has(id)) {
                 imgElement.src = pathCache.get(id);
                 return;
@@ -1109,30 +1101,22 @@
             const candidates = generateCandidatePaths(id, name);
             let found = false;
 
-            // Lanzar todas las peticiones a la vez
+            // 2. Lanzar todas las peticiones a la vez
             candidates.forEach(src => {
                 const img = new Image();
                 img.onload = () => {
                     if (!found) {
                         found = true;
-                        pathCache.set(id, src); // Guardar en cache el ganador
+                        pathCache.set(id, src); // Guardar ganador
                         imgElement.src = src;
                     }
                 };
                 img.src = src;
             });
-
-            // Debug visual si falla
-            setTimeout(() => {
-                if (!found && !imgElement.src) {
-                    console.error(`❌ NO ENCONTRADA: ${name} (ID: ${id})`);
-                    imgElement.style.border = "2px dashed red"; // Chivato visual
-                }
-            }, 3000);
         }
 
         function getSafeName(name) {
-            return name; // Pasamos el nombre sucio, generateCandidatePaths lo limpia
+            return name; // Dejamos el nombre sucio, generate lo limpia
         }
 
         function getBaseName(name) {
@@ -1343,18 +1327,16 @@
                 return null;
             }
 
-            // LOGICA GOD PACK: 10% IF, 90% Gold Shiny (Strict Mode)
+            // GOD PACK RATES: 10% IF, 90% Gold Shiny (Fallback Gold Normal)
             if (isSpecial) {
                 const poolIF = pool.filter(p => calcTotal(p) >= limitIF);
                 const poolGoldS = pool.filter(p => calcTotal(p) < limitIF && calcTotal(p) >= limitGoldShiny);
-                // Fallback Gold Normal ONLY if shiny empty
                 const poolGold = pool.filter(p => calcTotal(p) < limitGoldShiny && calcTotal(p) >= limitGold);
 
                 for (let i = 0; i < 5; i++) {
                     let rand = Math.random() * 100;
                     let chosenPool = [];
 
-                    // GOD PACK RATES
                     if (rand < 10 && poolIF.length > 0) chosenPool = poolIF;
                     else if (poolGoldS.length > 0) chosenPool = poolGoldS;
                     else chosenPool = poolGold.length > 0 ? poolGold : poolIF;
@@ -1368,7 +1350,7 @@
                 }
 
             } else {
-                // LOGICA NORMAL
+                // NORMAL RATES: 0.5% IF, 5% GoldS
                 const t1 = pool.filter(p => calcTotal(p) >= limitIF);
                 const t2 = pool.filter(p => calcTotal(p) < limitIF && calcTotal(p) >= limitGoldShiny);
                 const t3 = pool.filter(p => calcTotal(p) < limitGoldShiny && calcTotal(p) >= limitGold);
@@ -1379,7 +1361,6 @@
                     let rand = Math.random() * 100;
                     let tierPool = [];
 
-                    // NORMAL RATES: 0.5% IF, 5% GoldS, 25% Gold, 50% SilvS
                     if (rand < 0.5 && t1.length > 0) tierPool = t1;
                     else if (rand < 5.5 && t2.length > 0) tierPool = t2;
                     else if (rand < 25.5 && t3.length > 0) tierPool = t3;
@@ -1451,12 +1432,12 @@
                 const img = card.querySelector('img');
                 findAndLoadImage(img, p.id, p.nombre);
 
-                card.onclick = () => fillSlot(p, total, elemEs, rareClass);
+                card.onclick = () => fillSlot(p, total, p.nombre, elemEs, rareClass);
                 container.appendChild(card);
             });
         }
 
-        function fillSlot(p, total, elemEs, rareClass) {
+        function fillSlot(p, total, pName, elemEs, rareClass) {
             pickedIDs.add(p.id);
             pickedBaseNames.add(getBaseName(p.nombre));
 
@@ -1478,7 +1459,7 @@
             `;
 
             const img = slot.querySelector('img');
-            findAndLoadImage(img, p.id, p.nombre);
+            findAndLoadImage(img, p.id, pName);
 
             teamTotal += total; updateStats(); closeModal();
 
