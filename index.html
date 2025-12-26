@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Inazuma Draft Ultimate - Final Version</title>
+    <title>Inazuma Draft Ultimate - Final Link</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="data.js" onerror="console.log('Modo manual activo')"></script>
 
@@ -590,7 +590,7 @@
             margin-bottom: 25px;
         }
 
-        /* RESERVES */
+        /* RESERVAS */
         #reserves-section {
             width: 950px;
             background: #151515;
@@ -1062,20 +1062,19 @@
             "5-4-1": [["FW"], ["MF", "MF", "MF", "MF"], ["DF", "DF", "DF", "DF", "DF"], ["GK"]]
         };
 
-        // RUTAS EXACTAS
+        // --- SISTEMA DE RUTAS TRIPLE CHECK (RAIZ + SCOUTS + SCOUTS MAYUS) ---
         const baseSeasons = ['IE1', 'IE2', 'IE3', 'IEGO', 'GOCS', 'GOGX', 'ARES', 'ORION', 'VICTORY ROAD'];
         const allPaths = [];
         baseSeasons.forEach(season => {
             allPaths.push(`img/${season}/`);
-            allPaths.push(`img/${season}/scouts/`);
+            allPaths.push(`img/${season}/scouts/`); // minúscula
+            allPaths.push(`img/${season}/Scouts/`); // Mayúscula
         });
 
-        // BUSCADOR EN CASCADA
         window.tryLoadImage = function (img, id, safeName) {
             let currentTry = parseInt(img.getAttribute('data-try') || 0);
 
             // Si es el primer intento, construimos el ID con padding
-            // ID = 1 -> "0001"
             let paddedId = String(id).padStart(4, '0');
 
             currentTry++;
@@ -1090,16 +1089,12 @@
             }
         };
 
-        // LIMPIEZA DE NOMBRE ESTRICTA (0001_MarkEvans.png)
         function getSafeName(name) {
-            // 1. Quitar paréntesis si los hay (ej: "Mark Evans (Raimon)") -> "Mark Evans"
-            let str = name.split('(')[0].trim();
-
-            // 2. Mantener SOLO letras y números. NO bajar a minúsculas.
-            // Elimina espacios, tildes y símbolos.
-            // "Bête Noire" -> "BteNoire"
-            // "Mark Evans" -> "MarkEvans"
-            return str.replace(/[^a-zA-Z0-9]/g, '');
+            let str = name.toLowerCase();
+            const map = { 'ă': 'a', 'â': 'a', 'î': 'i', 'ș': 's', 'ț': 't', 'ñ': 'n', 'ß': 's', 'ö': 'o', 'ä': 'a', 'ü': 'u' };
+            for (let char in map) str = str.replace(new RegExp(char, 'g'), map[char]);
+            str = str.replace(/[áéíóú]/g, '');
+            return str.replace(/[^a-z0-9]/g, '');
         }
 
         function getBaseName(name) {
@@ -1281,12 +1276,14 @@
             }
 
             let pool = [];
+            // FILTER BY ROLE AND POSITION STRICTLY
             if (role === 'Player') {
                 pool = (strict && posCode !== 'Player') ? database.filter(p => p.role === 'Player' && p.perfil.posicion === posCode) : database.filter(p => p.role === 'Player');
             } else {
                 pool = database.filter(p => p.role === role);
             }
 
+            // EXTRA SAFETY
             if (role === 'Manager') pool = pool.filter(p => p.role === 'Manager');
             if (role === 'Coordinator') pool = pool.filter(p => p.role === 'Coordinator');
             if (role === 'Player') pool = pool.filter(p => p.role === 'Player');
@@ -1343,7 +1340,7 @@
                     let rand = Math.random() * 100;
                     let tierPool = [];
 
-                    // 0.5% IF, 5% GoldS, 25% Gold, 50% SilvS
+                    // NORMAL RATES: 0.5% IF, 5% GoldS, 25% Gold, 50% SilvS
                     if (rand < 0.5 && t1.length > 0) tierPool = t1;
                     else if (rand < 5.5 && t2.length > 0) tierPool = t2;
                     else if (rand < 25.5 && t3.length > 0) tierPool = t3;
